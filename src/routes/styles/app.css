@@ -1,0 +1,15 @@
+@import './tabla.css';
+@import './tarjeta.css';
+@import './tab.css';
+@import './input.css';
+@import './boton.css';
+@import './sideBar.css';
+@import './filas.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.contenedorPrincipal {
+	@apply lg:px-20 lg:pb-6 p-6 lg:pt-3 gap-3;
+}

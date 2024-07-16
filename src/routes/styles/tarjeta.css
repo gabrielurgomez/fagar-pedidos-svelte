@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.tarjeta {
+    @apply flex flex-col bg-white border border-gray-200 rounded-lg shadow-lg h-full sm:overflow-x-hidden overflow-x-auto;
+}
+
+.tarjeta-header {
+    @apply border-b-2 border-neutral-100 py-4 flex flex-row justify-center items-center;
+}
+
+.tarjeta-body {
+    @apply flex flex-col items-center justify-center pt-2 px-4 sm:px-8 gap-4
+}

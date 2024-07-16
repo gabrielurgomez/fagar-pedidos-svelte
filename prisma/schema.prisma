@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model vendedores {
+  id     Int    @id @default(autoincrement())
+  cedula String @db.VarChar(20)
+  nombre String @db.VarChar(100)
+  email  String @db.VarChar(50)
+}
+
+model ciudades {
+  id     Int    @id @default(autoincrement())
+  nombre String @db.VarChar(100)
+}

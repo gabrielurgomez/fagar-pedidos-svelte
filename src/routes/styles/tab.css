@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.contenedorTabs {
+    @apply flex flex-row items-center justify-center mb-4;
+}
+
+.tab {
+    @apply inline-flex gap-2 sm:text-lg text-sm items-center justify-center p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300
+}
+
+.tab-activo {
+    @apply text-green-700 font-bold border-green-700 dark:border-green-400;
+}
