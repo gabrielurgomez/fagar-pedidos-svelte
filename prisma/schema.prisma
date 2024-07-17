@@ -8,10 +8,11 @@ datasource db {
 }
 
 model vendedores {
-  id     Int    @id @default(autoincrement())
-  cedula String @db.VarChar(20)
-  nombre String @db.VarChar(100)
-  email  String @db.VarChar(50)
+  id                       Int      @id @default(autoincrement())
+  cedula                   String   @unique(map: "cedula") @db.VarChar(20)
+  fechaExpedicionDocumento DateTime @db.Date
+  nombre                   String   @db.VarChar(100)
+  email                    String   @db.VarChar(50)
 }
 
 model ciudades {

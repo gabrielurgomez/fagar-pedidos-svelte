@@ -4,11 +4,9 @@
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>Pedidos</title>
+	<meta name="description" content="Pedidos FAGAR" />
 </svelte:head>
-
-
 
 <style>
 </style>

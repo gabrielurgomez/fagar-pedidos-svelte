@@ -3,46 +3,46 @@
 	import SpinnerCargando from '$lib/components/SpinnerCargando.svelte';
 	import Swal from 'sweetalert2';
 	import IconoGuardar from '$lib/icons/Guardar.svelte';
-	import type { ciudades } from '@prisma/client';
 
 	let tabActivo = 'crear';
-	let ciudades: ciudades[] = [];
 
 	let estadoActual = { consultando: false, creando: false };
 
-	let ciudad = { nombre: '' };
+	let productos = [];
+
+	let pedido = { fechaEntrega: '', productos: [] };
 
 	const setTabActivo = (tab: string) => {
 		tabActivo = tab;
 	};
 
-	const consultarCiudades = async () => {
+	const consultarProductos = async () => {
 		estadoActual.consultando = true;
 		try {
 			console.log('Consultar ciudades');
-			let rta = await fetch('/api/ciudades', {
+			let rta = await fetch('/api/productos', {
 				method: 'GET',
 				cache: 'no-cache',
 				headers: { 'Content-Type': 'application/json' },
 			});
-			ciudades = await rta.json();
+			productos = await rta.json();
 			estadoActual.consultando = false;
 		} catch (error) {
 			console.error('Error al consultar vendedores:', error);
 		}
 	};
 
-	async function crearCiudad() {
-		if (ciudad.nombre === '') {
+	async function crearPedido() {
+		if (pedido.fechaEntrega === '') {
 			Swal.fire({
 				icon: 'info',
 				title: 'Datos incorrectos',
-				text: 'Debe digitar el nombre del vendedor',
+				text: 'Debe seleccionar la fecha de entrega',
 			});
 			return;
 		}
 
-		console.log('ciudad', ciudad);
+		console.log('pedido', pedido);
 
 		estadoActual.creando = true;
 
@@ -79,7 +79,7 @@
 </script>
 
 <svelte:head>
-	<title>Ciudades</title>
+	<title>Pedidos</title>
 	<meta name="description" content="Vendedores" />
 </svelte:head>
 
@@ -92,8 +92,8 @@
 
 		<button
 			on:click={() => {
-				setTabActivo('consultar');
-				consultarCiudades();
+				setTabActivo('crearPedido');
+				crearPedido();
 			}}
 			class={`tab ${tabActivo === 'consultar' ? 'tab-activo' : ''}`}
 		>
@@ -104,8 +104,8 @@
 	{#if tabActivo === 'crear'}
 		<div class="fila-1columna">
 			<div class="tarjeta sm:w-1/2 w-full">
-				<div class="tarjeta-header">Crear Ciudad</div>
-				<form method="POST" on:submit|preventDefault={crearCiudad}>
+				<div class="tarjeta-header">Crear Pedido</div>
+				<form method="POST" on:submit|preventDefault={crearPedido}>
 					<div class="tarjeta-body">
 						<div class="w-full">
 							<label for="nombre" class="input-label">Nombre</label>

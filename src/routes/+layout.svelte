@@ -1,57 +1,99 @@
 <script lang="ts">
 	import './styles/app.css';
-	import { auth } from '../firebase';
-	import { onAuthStateChanged } from 'firebase/auth';
-	import SideBaR from '$lib/components/SideBar.svelte';
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { obtenerURLArchivo } from '../lib/scripts/firebase/storage.obtenerURLArchivo';
 	import { setUsuarioLogueado, getUsuarioLogueado } from './context';
-	setUsuarioLogueado();
-	let usuarioLogueado = getUsuarioLogueado();
+	import { logo } from '../lib/images/logo';
+	import SpinnerCargando from '$lib/components/SpinnerCargando.svelte';
+	import Swal from 'sweetalert2';
+	//setUsuarioLogueado();
+	//let usuarioLogueado = getUsuarioLogueado();
 
-	onMount(() => {
-		onAuthStateChanged(auth, async (user) => {
-			if (user) {
-				let urlFotoPerfil = '';
+	let estadoActual = { validandoUsuario: false };
+	let usuario = { numeroCedula: '1098685807', fechaExpedicionDocumento: '2008-04-24' };
+	let usuarioValidado = false;
 
-				const rtaFotoPerfil = await obtenerURLArchivo(`usuarios/fotoPerfil/${user.email}.png`);
-				if (rtaFotoPerfil !== 'archivo no existe') {
-					urlFotoPerfil = rtaFotoPerfil;
-				} else {
-					urlFotoPerfil = '';
-				}
+	const validarUsuario = async () => {
+		if (usuario.numeroCedula === '') {
+			Swal.fire({ icon: 'info', title: 'Valide datos', text: 'Debe digitar el número de cedula' });
+			return;
+		}
+		if (usuario.fechaExpedicionDocumento === '') {
+			Swal.fire({
+				icon: 'info',
+				title: 'Valide datos',
+				text: 'Debe seleccionar la fecha de expedicion del documento',
+			});
+			return;
+		}
 
-				$usuarioLogueado = {
-					email: user.email ? user.email : '',
-					urlFotoPerfil,
-				};
+		console.log('se validará el usuario', usuario);
 
-				await goto('/cuenta');
-			} else {
-				$usuarioLogueado = {
-					email: '',
-					urlFotoPerfil: '',
-				};
-				await goto('/iniciarSesion');
-			}
-		});
-	});
+		estadoActual.validandoUsuario = true;
+
+		const rtaJson = await fetch(
+			`api/vendedor?cedula=${usuario.numeroCedula}&fechaExpedicionDocumento=${usuario.fechaExpedicionDocumento}`,
+			{
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+		if (rtaJson.status === 200) {
+			usuarioValidado = true;
+			const infoVendedor = await rtaJson.json();
+			console.log('infoVendedor', infoVendedor);
+		}
+
+		if (rtaJson.status === 404) {
+			Swal.fire({
+				icon: 'info',
+				title: 'Usuario no encontrado',
+				text: 'El usuario no se encuentra registrado en la base de datos',
+			});
+		}
+		estadoActual.validandoUsuario = false;
+	};
 </script>
 
-<div>
-	<div class="flex sm:flex-row flex-col">
-		<div
-			class={`${$usuarioLogueado.email != '' ? 'sm:w-1/5' : 'invisible'}w-full flex flex-col sm:h-screen sm:border-e `}
-		>
-			{#if $usuarioLogueado.email != ''}
-				<SideBaR />
-			{/if}
-		</div>
-		<div class={`${$usuarioLogueado.email != '' ? 'sm:w-4/5' : ''}  w-full`}>
-			<slot />
-		</div>
+<div class="contenedorPrincipal">
+	<div class="flex flex-col items-center">
+		<img alt="logo" src={logo} class="w-80 h-45" />
+		<h1 class="text-6xl">PEDIDOS</h1>
 	</div>
+	{#if !usuarioValidado}
+		<div class="fila-1columna mt-8">
+			<div class="tarjeta sm:w-1/2 w-full">
+				<div class="tarjeta-header">Validación de usuario</div>
+				<form method="POST" on:submit|preventDefault={validarUsuario}>
+					<div class="tarjeta-body">
+						<div>
+							<label for="usuario" class="input-label">Numero cedula</label>
+							<input class="input-texto" bind:value={usuario.numeroCedula} type="text" />
+						</div>
+						<div>
+							<label for="contrasena" class="input-label">Fecha expedicion documento</label>
+							<input
+								class="input-texto"
+								bind:value={usuario.fechaExpedicionDocumento}
+								type="date"
+							/>
+						</div>
+						<div class="flex flex-col items-center">
+							{#if estadoActual.validandoUsuario}
+								<SpinnerCargando />
+							{:else}
+								<button class="boton-principal fondoVerdeFagar" type="submit">Validar</button>
+							{/if}
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	{:else}
+		<div class="fila-1columna mt-8">
+			<div>Usuario validado</div>
+		</div>
+	{/if}
 </div>
 
 <style>

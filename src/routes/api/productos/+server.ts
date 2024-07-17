@@ -1,15 +1,13 @@
-import { error } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
+/*import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
+import { pool } from './../../../mysql.config';
 
-const prisma = new PrismaClient();
 
 export const GET: RequestHandler = async () => {
     try {
-        const ciudades = await prisma.ciudades.findMany();
-        await prisma.$disconnect();
-        if (ciudades.length > 0) {
-            return new Response(JSON.stringify(ciudades), {
+        const [productos] = await pool.query('SELECT * FROM `productos`');
+        if (productos.length > 0) {
+            return new Response(JSON.stringify(productos), {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -25,4 +23,4 @@ export const GET: RequestHandler = async () => {
         console.error(e);
         throw error(500, 'Internal Server Error');
     }
-};
+};*/
