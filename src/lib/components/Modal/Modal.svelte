@@ -1,7 +1,6 @@
-<script>
-	export let mostrarModal; // boolean
-
-	let dialog; // HTMLDialogElement
+<script lang="ts">
+	export let mostrarModal: Boolean;
+	let dialog: HTMLDialogElement;
 
 	$: if (dialog && mostrarModal) dialog.showModal();
 </script>
@@ -11,14 +10,12 @@
 	bind:this={dialog}
 	on:close={() => (mostrarModal = false)}
 	on:click|self={() => dialog.close()}
-	class="max-w-lg rounded-md border-none p-0"
+	class="w-full sm:w-1/2 h-screen rounded-md border-none overflow-y-auto"
 >
+	<slot></slot>
+	<div class="border-b"></div>
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div on:click|stopPropagation class="p-4">
-		<slot name="header" />
-		<hr class="my-2" />
-		<slot />
-		<hr class="my-2" />
 		<!-- svelte-ignore a11y-autofocus -->
 		<button
 			class="text-red-600 hover:text-red-400 mt-2 block font-bold"

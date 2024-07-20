@@ -47,8 +47,7 @@
 	"type": "module",
 	"dependencies": {
 		"@prisma/client": "^5.15.1",
-		"dayjs": "^1.11.11",
-		"firebase": "^10.12.2",
+		"bits-ui": "^0.21.12",
 		"mysql2": "^3.10.3",
 		"sweetalert2": "^11.12.0"
 	}

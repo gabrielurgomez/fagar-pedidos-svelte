@@ -1,11 +1,14 @@
-/*import { error } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { pool } from './../../../mysql.config';
+import type { ProductoConsultado } from './../../../lib/types';
 
 
 export const GET: RequestHandler = async () => {
     try {
-        const [productos] = await pool.query('SELECT * FROM `productos`');
+        const [rows] = await pool.query('SELECT id, nombre FROM `Productos`');
+        const productos = rows as ProductoConsultado[];
+        console.log('productos', productos.length);
         if (productos.length > 0) {
             return new Response(JSON.stringify(productos), {
                 headers: {
@@ -23,4 +26,4 @@ export const GET: RequestHandler = async () => {
         console.error(e);
         throw error(500, 'Internal Server Error');
     }
-};*/
+};
