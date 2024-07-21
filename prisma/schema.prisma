@@ -8,14 +8,25 @@ datasource db {
 }
 
 model vendedores {
-  id                       Int      @id @default(autoincrement())
-  cedula                   String   @unique(map: "cedula") @db.VarChar(20)
-  fechaExpedicionDocumento DateTime @db.Date
-  nombre                   String   @db.VarChar(100)
-  email                    String   @db.VarChar(50)
+  id                       Int       @id @default(autoincrement())
+  cedula                   String    @unique(map: "cedula") @db.VarChar(20)
+  fechaExpedicionDocumento DateTime  @db.Date
+  nombre                   String    @db.VarChar(100)
+  email                    String    @db.VarChar(50)
+  pedidos                  pedidos[]
 }
 
 model ciudades {
   id     Int    @id @default(autoincrement())
   nombre String @db.VarChar(100)
+}
+
+model pedidos {
+  id           Int        @id @default(autoincrement())
+  creado       DateTime   @db.Date
+  fechaEntrega DateTime   @db.Date
+  vendedorId   Int
+  vendedores   vendedores @relation(fields: [vendedorId], references: [id])
+
+  @@index([vendedorId], map: "pedidos_vendedorId_fkey")
 }

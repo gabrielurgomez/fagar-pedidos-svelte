@@ -1,29 +1,33 @@
 <script lang="ts">
 	import './styles/app.css';
-	import IconoGuardar from '$lib/icons/Guardar.svelte';
+	//import IconoGuardar from '$lib/icons/Guardar.svelte';
 	import { logo } from '../lib/images/logo';
-	import SpinnerCargando from '$lib/components/SpinnerCargando.svelte';
 	import Swal from 'sweetalert2';
 	import type { ProductoConsultado } from '../lib/types';
-	import { Modal, ModalHeader } from '$lib/components/Modal';
-	import ModalBody from '$lib/components/Modal/ModalBody.svelte';
+	import { Modal, ModalHeader, ModalBody, ModalFooter } from '$lib/components/Modal';
+	import { Tarjeta, TarjetaHeader, TarjetaBody } from '$lib/components/Tarjeta';
+	import { Boton } from '$lib/components/Boton';
+	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
+	import Eliminar from '$lib/icons/Eliminar.svelte';
 
-	let tabActivo = '';
-
-	const setTabActivo = (tab: string) => {
+	/*const setTabActivo = (tab: string) => {
 		tabActivo = tab;
-	};
+	};*/
+
+	type ProductoAgregado = { id: number; nombre: string; cantidad: number };
 
 	let estadoActual = { validandoUsuario: false, consultandoProductos: false, creandoPedido: false };
 	let usuario = { numeroCedula: '1098685807', fechaExpedicionDocumento: '2008-04-24' };
 	let productos: ProductoConsultado[] = [];
-	let productosFiltrados: ProductoConsultado[] = [];
 	let nombreProductoBuscar = '';
-	let usuarioValidado = false;
+	let usuarioValidado = true;
+	let tabActivo = 'crear pedido';
+	let mostrarModalProductos = false;
 
-	let pedido = { fechaEntrega: '' };
+	let pedido = { fechaEntrega: '', comentario: '' };
 
-	let productoSeleccionado: ProductoConsultado = { id: 0, nombre: '' };
+	let productoSeleccionado: ProductoAgregado = { id: 0, nombre: '', cantidad: 0 };
+	let productosAgregados: ProductoAgregado[] = [];
 
 	const validarUsuario = async () => {
 		if (usuario.numeroCedula === '') {
@@ -79,16 +83,24 @@
 				headers: { 'Content-Type': 'application/json' },
 			});
 			productos = await rta.json();
-			productosFiltrados = productos;
-
 			console.log('productos', productos);
 			estadoActual.consultandoProductos = false;
+			//return productos;
+			//productosFiltrados = productos;
 		} catch (error) {
 			console.error('Error al consultar vendedores:', error);
 		}
 	};
 
 	const crearPedido = async () => {
+		if (productosAgregados.length === 0) {
+			Swal.fire({
+				icon: 'info',
+				title: 'No hay productos',
+				text: 'Debe agregar al menos un producto al pedido',
+			});
+			return;
+		}
 		console.log('Se creará el pedido');
 	};
 
@@ -97,135 +109,233 @@
 	});
 </script>
 
-<div class="contenedorPrincipal">
+<div class={`contenedorPrincipal`}>
+	{#if mostrarModalProductos}
+		<Modal>
+			<ModalHeader titulo={'Seleccione producto'}>Seleccione Producto</ModalHeader>
+			<ModalBody>
+				<input
+					class="input-texto mb-4"
+					type="text"
+					placeholder="Filtrar productos"
+					bind:value={nombreProductoBuscar}
+				/>
+
+				{#if estadoActual.consultandoProductos}
+					<PuntosCargando />
+				{:else}
+					<div class="overflow-y-auto mt-4 w-full flex h-1/2 border rounded-lg">
+						{#if productosFiltrados.length > 0}
+							<table>
+								<thead class="sticky top-0 bg-white">
+									<tr>
+										<th class="px-4">ID</th>
+										<th class="px-4">Producto</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each productosFiltrados as producto}
+										<tr
+											class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200 text-slate-600`}
+											on:click={() => {
+												productoSeleccionado.id = producto.id;
+												productoSeleccionado.nombre = producto.nombre;
+												//mostrarModalProductos = false;
+												console.log('productoSeleccionado', productoSeleccionado);
+											}}
+										>
+											<td class="px-4">{producto.id}</td>
+											<td class="px-4">{producto.nombre}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{:else}
+							<div>No hay coincidencias</div>
+						{/if}
+					</div>
+
+					<div class="w-1/2 mt-2 flex-col">
+						<label for="cantidad" class="input-label mt-4">Cantidad</label>
+						<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
+						<Boton
+							variante="link verdeFagar"
+							onClick={() => {
+								console.log('se agregará el producto', productoSeleccionado);
+
+								const productoExiste = productosAgregados.some(
+									(producto) => producto.id === productoSeleccionado.id,
+								);
+								if (!productoExiste) {
+									productosAgregados = [...productosAgregados, productoSeleccionado];
+									console.log('productosAgregados', productosAgregados);
+									productoSeleccionado = { id: 0, nombre: '', cantidad: 0 };
+									mostrarModalProductos = false;
+								} else {
+									Swal.fire({
+										icon: 'info',
+										title: 'Producto ya agregado',
+										text: 'El producto seleccionado ya fue agregado al pedido',
+									});
+								}
+							}}
+						>
+							Agregar al pedido
+						</Boton>
+					</div>
+				{/if}
+			</ModalBody>
+			<ModalFooter>
+				<Boton variante="link rojo" onClick={() => (mostrarModalProductos = false)}>Cancelar</Boton>
+			</ModalFooter>
+		</Modal>
+	{/if}
+
 	<div class="flex flex-col items-center">
-		<img alt="logo" src={logo} class="w-80 h-45" />
-		<h1 class="text-6xl">PEDIDOS</h1>
+		<img alt="logo" src={logo} class="w-40 h-25 sm:w-80 sm:h-45" />
 	</div>
 	{#if !usuarioValidado}
-		<div class="fila-1columna mt-8">
-			<div class="tarjeta sm:w-1/2 w-full">
-				<div class="tarjeta-header">Validación de usuario</div>
-				<form method="POST" on:submit|preventDefault={validarUsuario}>
-					<div class="tarjeta-body">
-						<div>
-							<label for="usuario" class="input-label">Numero cedula</label>
-							<input class="input-texto" bind:value={usuario.numeroCedula} type="text" />
-						</div>
-						<div>
-							<label for="contrasena" class="input-label">Fecha expedicion documento</label>
-							<input
-								class="input-texto"
-								bind:value={usuario.fechaExpedicionDocumento}
-								type="date"
-							/>
-						</div>
-						<div class="flex flex-col items-center">
-							{#if estadoActual.validandoUsuario}
-								<SpinnerCargando />
-							{:else}
-								<button class="boton-principal fondoVerdeFagar" type="submit">Validar</button>
-							{/if}
-						</div>
-					</div>
+		<Tarjeta>
+			<TarjetaHeader titulo={'Validación de usuario'} />
+			<TarjetaBody>
+				<form method="POST" class="flex flex-col" on:submit|preventDefault={validarUsuario}>
+					<label for="usuario" class="input-label">Numero cedula</label>
+					<input class="input-texto" bind:value={usuario.numeroCedula} type="text" />
+
+					<label for="contrasena" class="input-label mt-4">Fecha expedicion documento</label>
+					<input class="input-texto" bind:value={usuario.fechaExpedicionDocumento} type="date" />
+					<Boton
+						onClick={() => console.log('')}
+						tipo={'submit'}
+						cargando={estadoActual.validandoUsuario}
+						variante={'principal'}
+					>
+						Validar
+					</Boton>
 				</form>
-			</div>
-		</div>
+			</TarjetaBody>
+		</Tarjeta>
 	{:else}
-		<div class="fila-1columna mt-8">
-			<div class="contenedorTabs">
-				<div class={`tab ${tabActivo === 'crear pedido' ? 'tab-activo' : ''}`}>
-					<IconoGuardar tamano={20} />
+		<!--
+		POR AHORA NO HABRÁ CONTENEDOR DE TABS YA QUE SOLO NECESITAMOS QUE EL VENDEDOR CREE EL PEDIDO
+			<div class="fila-1columna mt-8">
+				<div class="contenedorTabs">
+					<div class={`tab ${tabActivo === 'crear pedido' ? 'tab-activo' : ''}`}>
+						<IconoGuardar tamano={20} />
+						<button
+							on:click={() => {
+								setTabActivo('crear pedido');
+								consultarProductos();
+							}}
+						>
+							Crear
+						</button>
+					</div>
+
 					<button
 						on:click={() => {
-							setTabActivo('crear pedido');
-							consultarProductos();
+							setTabActivo('consultar pedidos');
+							//consultarCiudades();
 						}}
+						class={`tab ${tabActivo === 'consultar' ? 'tab-activo' : ''}`}
 					>
-						Crear
+						Consultar
 					</button>
 				</div>
-
-				<button
-					on:click={() => {
-						setTabActivo('consultar pedidos');
-						//consultarCiudades();
-					}}
-					class={`tab ${tabActivo === 'consultar' ? 'tab-activo' : ''}`}
-				>
-					Consultar
-				</button>
 			</div>
-
-			<button
-				class="boton-principal fondoRojo"
-				type="submit"
-				on:click={() => {
-					usuarioValidado = false;
-					tabActivo = '';
-				}}
-			>
-				Cerrar sesión
-			</button>
-		</div>
-	{/if}
-
-	{#if tabActivo === 'crear pedido'}
-		<div class="fila-1columna">
-			<div class="tarjeta sm:w-1/2 w-full">
-				<div class="tarjeta-header">Crear pedido</div>
-				<form method="POST" on:submit|preventDefault={crearPedido}>
-					<div class="tarjeta-body">
+		-->
+		{#if tabActivo === 'crear pedido'}
+			<Tarjeta>
+				<TarjetaHeader titulo={'Crear pedido'}></TarjetaHeader>
+				<TarjetaBody>
+					<form method="POST" on:submit|preventDefault={crearPedido}>
 						<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
 						<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
-						<label for="nombre" class="input-label">Agregue producto</label>
-						<Modal mostrarModal={true}>
-							<ModalHeader titulo={'Seleccione producto'}>Seleccione Producto</ModalHeader>
-							<ModalBody>
-								<div class="overflow-y-auto">
-									<input
-										class="input-texto"
-										type="text"
-										placeholder="Filtrar productos"
-										bind:value={nombreProductoBuscar}
-									/>
-									<table>
-										{#if estadoActual.consultandoProductos}
-											<SpinnerCargando />
-										{:else}
-											{#each productosFiltrados as producto}
-												<tr class="mt-2">
-													<td>{producto.nombre}</td>
-													<td class="px-4">
-														<button
-															class="hover:underline hover:font-bold text-green-600"
-															on:click={() => {
-																productoSeleccionado = producto;
-															}}
-														>
-															Agregar
-														</button>
-													</td>
-												</tr>
-											{/each}
-										{/if}
-									</table>
-								</div>
-							</ModalBody>
-						</Modal>
-						<div class="flex flex-col items-center w-full">
-							{#if estadoActual.creandoPedido}
-								<SpinnerCargando />
-							{:else}
-								<button class="boton-principal fondoVerdeFagar" type="submit">Crear ciudad</button>
-							{/if}
-						</div>
-					</div>
-				</form>
-			</div>
-		</div>
+						<Boton
+							variante="link verdeFagar"
+							onClick={() => {
+								console.log('se mostrará el modal');
+								consultarProductos();
+								mostrarModalProductos = true;
+							}}
+						>
+							Agregar producto
+						</Boton>
+						<br />
+						<!--tabla que muestra los productos agregados-->
+						{#if productosAgregados.length > 0}
+							<div class="mb-4 border rounded-lg pt-2">
+								<table class="mb-4">
+									<tr>
+										<th class="px-2 sm:px-4">ID</th>
+										<th class="px-1 sm:px-4 sm:text-center text-start">Producto</th>
+										<th class="px-4 hidden sm:flex">Cantidad</th>
+										<th class="px-1 sm:hidden">Cant</th>
+										<th class="px-1 sm:px-4 hidden sm:table-cell">Quitar</th>
+									</tr>
+
+									{#each productosAgregados as productoAgregado}
+										<tr>
+											<td class="px-2 sm:px-4 flex justify-center">{productoAgregado.id}</td>
+											<td class="px-1 sm:px-4 text-sm sm:text-base">{productoAgregado.nombre}</td>
+											<td class="px-1 sm:px-4 sm:text-center text-start">
+												{productoAgregado.cantidad}
+											</td>
+											<td class="flex justify-center px-4 sm:px-0">
+												<button
+													on:click={() => {
+														productosAgregados = productosAgregados.filter(
+															(producto) => producto.id !== productoAgregado.id,
+														);
+													}}
+												>
+													<Eliminar tamano={20}></Eliminar>
+												</button>
+											</td>
+										</tr>
+									{/each}
+								</table>
+							</div>
+						{/if}
+						<label for="w3review" class="mt-4">Comentarios generales:</label>
+						<textarea
+							bind:value={pedido.comentario}
+							class="input-texto"
+							id="w3review"
+							name="w3review"
+							rows="4"
+							cols="50"
+						></textarea>
+
+						<Boton
+							variante="principal"
+							tipo="submit"
+							cargando={estadoActual.creandoPedido}
+							onClick={() => {
+								console.log('se creará el pedido');
+							}}
+						>
+							Crear pedido
+						</Boton>
+					</form>
+				</TarjetaBody>
+			</Tarjeta>
+		{/if}
+
+		<Boton
+			variante={'rojo'}
+			onClick={() => {
+				usuarioValidado = false;
+				productos = [];
+				productosFiltrados = [];
+				tabActivo = '';
+			}}
+		>
+			Cerrar sesión
+		</Boton>
 	{/if}
 
+	<!--slot no se esta usando, es para que no de advertencia-->
 	<slot />
 </div>
 
