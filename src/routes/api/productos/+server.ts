@@ -8,7 +8,7 @@ export const GET: RequestHandler = async () => {
     try {
         const [rows] = await pool.query('SELECT id, nombre FROM `Productos`');
         const productos = rows as ProductoConsultado[];
-        console.log('productos', productos.length);
+        //console.log('productos', productos.length);
         if (productos.length > 0) {
             return new Response(JSON.stringify(productos), {
                 headers: {

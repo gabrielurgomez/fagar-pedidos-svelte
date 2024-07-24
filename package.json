@@ -48,6 +48,7 @@
 	"dependencies": {
 		"@prisma/client": "^5.15.1",
 		"bits-ui": "^0.21.12",
+		"dayjs": "^1.11.12",
 		"mysql2": "^3.10.3",
 		"sweetalert2": "^11.12.0"
 	}

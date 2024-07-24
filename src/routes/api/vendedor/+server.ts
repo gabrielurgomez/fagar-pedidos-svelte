@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ url }) => {
             });
         }
 
-        console.log('cedula recibida', cedula)
+        //console.log('cedula recibida', cedula)
 
         /*const [vendedor] = await pool.query(consultarVendedorSQL, ['1098685807', '1990-04-24']);
         console.log('vendedor', vendedor);*/

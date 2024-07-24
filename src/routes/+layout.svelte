@@ -20,16 +20,18 @@
 	let usuario = { numeroCedula: '1098685807', fechaExpedicionDocumento: '2008-04-24' };
 	let productos: ProductoConsultado[] = [];
 	let nombreProductoBuscar = '';
-	let usuarioValidado = true;
+
 	let tabActivo = 'crear pedido';
 	let mostrarModalProductos = false;
+	let vendedorLogueado = { id: 0, nombre: '' };
 
-	let pedido = { fechaEntrega: '', comentario: '' };
+	let pedido = { fechaEntrega: '', comentario: '', idVendedor: 0 };
 
 	let productoSeleccionado: ProductoAgregado = { id: 0, nombre: '', cantidad: 0 };
 	let productosAgregados: ProductoAgregado[] = [];
 
 	const validarUsuario = async () => {
+		console.log('se validará el usuario', usuario);
 		if (usuario.numeroCedula === '') {
 			Swal.fire({ icon: 'info', title: 'Valide datos', text: 'Debe digitar el número de cedula' });
 			return;
@@ -55,9 +57,11 @@
 			},
 		);
 		if (rtaJson.status === 200) {
-			usuarioValidado = true;
 			const infoVendedor = await rtaJson.json();
 			console.log('infoVendedor', infoVendedor);
+			vendedorLogueado.id = infoVendedor.id;
+			pedido.idVendedor = infoVendedor.id;
+			vendedorLogueado.nombre = infoVendedor.nombre;
 			//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
 			tabActivo = 'crear pedido';
 			consultarProductos();
@@ -83,7 +87,7 @@
 				headers: { 'Content-Type': 'application/json' },
 			});
 			productos = await rta.json();
-			console.log('productos', productos);
+			//console.log('productos', productos);
 			estadoActual.consultandoProductos = false;
 			//return productos;
 			//productosFiltrados = productos;
@@ -93,6 +97,15 @@
 	};
 
 	const crearPedido = async () => {
+		console.clear();
+		if (pedido.fechaEntrega === '') {
+			Swal.fire({
+				icon: 'info',
+				title: 'Fecha de entrega',
+				text: 'Debe seleccionar la fecha de entrega del pedido',
+			});
+			return;
+		}
 		if (productosAgregados.length === 0) {
 			Swal.fire({
 				icon: 'info',
@@ -101,7 +114,36 @@
 			});
 			return;
 		}
-		console.log('Se creará el pedido');
+		//console.log('Se creará el pedido', pedido);
+		//console.log('con los productos', productosAgregados);
+
+		estadoActual.creandoPedido = true;
+
+		const rtaPedidoJson = await fetch('/api/pedido', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ ...pedido, productos: productosAgregados }),
+		});
+
+		console.log('rtaPedidoJson', rtaPedidoJson);
+
+		if (rtaPedidoJson.status === 201) {
+			Swal.fire({
+				icon: 'success',
+				title: 'Pedido creado',
+				text: 'El pedido fue creado exitosamente',
+			});
+			productosAgregados = [];
+			pedido = { fechaEntrega: '', comentario: '', idVendedor: 0 };
+		} else {
+			Swal.fire({
+				icon: 'error',
+				title: 'Error al crear pedido',
+				text: 'Ocurrió un error al crear el pedido',
+			});
+		}
+
+		estadoActual.creandoPedido = false;
 	};
 
 	$: productosFiltrados = productos.filter((producto) => {
@@ -167,6 +209,14 @@
 									(producto) => producto.id === productoSeleccionado.id,
 								);
 								if (!productoExiste) {
+									if (productoSeleccionado.cantidad <= 0) {
+										Swal.fire({
+											icon: 'info',
+											title: 'Cantidad no válida',
+											text: 'La cantidad del producto debe ser mayor a 0',
+										});
+										return;
+									}
 									productosAgregados = [...productosAgregados, productoSeleccionado];
 									console.log('productosAgregados', productosAgregados);
 									productoSeleccionado = { id: 0, nombre: '', cantidad: 0 };
@@ -194,7 +244,7 @@
 	<div class="flex flex-col items-center">
 		<img alt="logo" src={logo} class="w-40 h-25 sm:w-80 sm:h-45" />
 	</div>
-	{#if !usuarioValidado}
+	{#if vendedorLogueado.id === 0}
 		<Tarjeta>
 			<TarjetaHeader titulo={'Validación de usuario'} />
 			<TarjetaBody>
@@ -202,7 +252,7 @@
 					<label for="usuario" class="input-label">Numero cedula</label>
 					<input class="input-texto" bind:value={usuario.numeroCedula} type="text" />
 
-					<label for="contrasena" class="input-label mt-4">Fecha expedicion documento</label>
+					<label for="contrasena" class="input-label mt-4">Fecha expedición</label>
 					<input class="input-texto" bind:value={usuario.fechaExpedicionDocumento} type="date" />
 					<Boton
 						onClick={() => console.log('')}
@@ -216,6 +266,9 @@
 			</TarjetaBody>
 		</Tarjeta>
 	{:else}
+		<div>
+			<h1 class="text-2xl text-center">{vendedorLogueado.nombre}</h1>
+		</div>
 		<!--
 		POR AHORA NO HABRÁ CONTENEDOR DE TABS YA QUE SOLO NECESITAMOS QUE EL VENDEDOR CREE EL PEDIDO
 			<div class="fila-1columna mt-8">
@@ -325,7 +378,7 @@
 		<Boton
 			variante={'rojo'}
 			onClick={() => {
-				usuarioValidado = false;
+				vendedorLogueado = { id: 0, nombre: '' };
 				productos = [];
 				productosFiltrados = [];
 				tabActivo = '';

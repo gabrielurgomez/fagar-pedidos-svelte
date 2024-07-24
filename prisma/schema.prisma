@@ -22,11 +22,23 @@ model ciudades {
 }
 
 model pedidos {
-  id           Int        @id @default(autoincrement())
-  creado       DateTime   @db.Date
-  fechaEntrega DateTime   @db.Date
-  vendedorId   Int
-  vendedores   vendedores @relation(fields: [vendedorId], references: [id])
+  id            Int             @id @default(autoincrement())
+  idVendedor    Int
+  fechaEntrega  DateTime        @db.Date
+  creado        DateTime        @db.Date
+  comentario    String          @db.VarChar(100)
+  detallePedido detallePedido[]
+  vendedores    vendedores      @relation(fields: [idVendedor], references: [id])
 
-  @@index([vendedorId], map: "pedidos_vendedorId_fkey")
+  @@index([idVendedor], map: "pedidos_idVendedor_fkey")
+}
+
+model detallePedido {
+  id         Int     @id @default(autoincrement())
+  idPedido   Int
+  idProducto Int
+  cantidad   Int
+  pedido     pedidos @relation(fields: [idPedido], references: [id])
+
+  @@index([idPedido], map: "detallePedido_idPedido_fkey")
 }
