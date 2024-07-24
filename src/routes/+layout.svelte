@@ -17,7 +17,7 @@
 	type ProductoAgregado = { id: number; nombre: string; cantidad: number };
 
 	let estadoActual = { validandoUsuario: false, consultandoProductos: false, creandoPedido: false };
-	let usuario = { numeroCedula: '1098685807', fechaExpedicionDocumento: '2008-04-24' };
+	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
 	let productos: ProductoConsultado[] = [];
 	let nombreProductoBuscar = '';
 

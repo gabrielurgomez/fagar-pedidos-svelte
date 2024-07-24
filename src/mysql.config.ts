@@ -1,12 +1,12 @@
-import { env } from '$env/dynamic/private';
 import mysql, { type PoolOptions } from 'mysql2/promise';
-
+import { config } from 'dotenv';
+config();
 const access: PoolOptions = {
-    host: env.DB_HOST,
-    user: env.DB_USER,
-    port: Number(env.DB_PORT),
-    database: env.DB_NAME,
-    password: env.DB_PASSWORD,
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    port: Number(process.env.MYSQL_PORT),
+    database: process.env.MYSQL_DATABASE,
+    password: process.env.MYSQL_PASSWORD,
 };
 
 export const pool = mysql.createPool(access);
