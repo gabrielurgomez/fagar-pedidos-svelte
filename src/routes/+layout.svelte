@@ -58,7 +58,7 @@
 		);
 		if (rtaJson.status === 200) {
 			const infoVendedor = await rtaJson.json();
-			console.log('infoVendedor', infoVendedor);
+			console.log('infoVendedor logueado', infoVendedor);
 			vendedorLogueado.id = infoVendedor.id;
 			pedido.idVendedor = infoVendedor.id;
 			vendedorLogueado.nombre = infoVendedor.nombre;
@@ -122,24 +122,30 @@
 		const rtaPedidoJson = await fetch('/api/pedido', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ ...pedido, productos: productosAgregados }),
+			body: JSON.stringify({
+				...pedido,
+				productos: productosAgregados,
+				nombreVendedor: vendedorLogueado.nombre,
+			}),
 		});
 
-		console.log('rtaPedidoJson', rtaPedidoJson);
+		//console.log('rtaPedidoJson', rtaPedidoJson);
 
 		if (rtaPedidoJson.status === 201) {
+			let rta = await rtaPedidoJson.json();
 			Swal.fire({
 				icon: 'success',
 				title: 'Pedido creado',
-				text: 'El pedido fue creado exitosamente',
+				text: rta.message,
 			});
 			productosAgregados = [];
 			pedido = { fechaEntrega: '', comentario: '', idVendedor: 0 };
 		} else {
+			let rtaError = await rtaPedidoJson.json();
 			Swal.fire({
 				icon: 'error',
-				title: 'Error al crear pedido',
-				text: 'Ocurrió un error al crear el pedido',
+				title: 'Error 500 en el servidor',
+				text: rtaError,
 			});
 		}
 
@@ -248,7 +254,7 @@
 		<Tarjeta>
 			<TarjetaHeader titulo={'Validación de usuario'} />
 			<TarjetaBody>
-				<form method="POST" class="flex flex-col" on:submit|preventDefault={validarUsuario}>
+				<form class="flex flex-col" on:submit|preventDefault={validarUsuario}>
 					<label for="usuario" class="input-label">Numero cedula</label>
 					<input class="input-texto" bind:value={usuario.numeroCedula} type="text" />
 

@@ -1,7 +1,8 @@
-import { error } from '@sveltejs/kit';
+//import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { PrismaClient } from '@prisma/client';
-import { obtenerFechaYHoraActual, formearFechaISO8601 } from '$lib/server/script';
+import { obtenerFechaYHoraActual, formearFechaISO8601 } from '$lib/server/fechas';
+import { transporterSistemas } from '$lib/server/nodemailer';
 
 //recordar que estos datos de producto no estan la bd de admon2 si no en admon,
 //por eso ese type no está en prisma
@@ -14,9 +15,9 @@ export const POST: RequestHandler = async ({ request }) => {
     try {
 
         const { fechaHoraActualISO8601 } = obtenerFechaYHoraActual();
-        console.log('fechaHoraActualISO8601', fechaHoraActualISO8601);
+        //console.log('fechaHoraActualISO8601', fechaHoraActualISO8601);
 
-        const { idVendedor, fechaEntrega, comentario, productos } = await request.json();
+        const { idVendedor, fechaEntrega, comentario, productos, nombreVendedor } = await request.json();
 
         if (!idVendedor || idVendedor === 0) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave idVendedor' }), {
@@ -78,7 +79,37 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        return new Response(JSON.stringify(nuevoPedido), {
+        //se envia correo notificando
+        let cuerpoHtml = "<b>Se notifica nuevo pedido</b><br>";
+        cuerpoHtml += `<br>`;
+        cuerpoHtml += `<b>Vendedor</b>: ${nombreVendedor}<br>`;
+        cuerpoHtml += `<b>Fecha de entrega:</b> ${fechaEntrega}<br>`;
+        cuerpoHtml += `<b>Comentario:</b> ${comentario}<br>`;
+        cuerpoHtml += `<b>Cantidad de productos:</b> ${productos.length}<br>`;
+        cuerpoHtml += `<br>`;
+        cuerpoHtml += `<div>Para mas detalles, inicie sesión en la aplicacion pedidos.fagarcomercial.com</div>`;
+
+        //se notifica por correo electronico a la empresa
+        try {
+            const envio = await transporterSistemas.sendMail({
+                from: "sistemas@fagarcomercial.com",
+                to: 'info@colsysnet.com',
+                replyTo: "sistemas@fagarcomercial.com",
+                subject: `PEDIDOS - Nuevo pedido ID #${nuevoPedido.id}`,
+                html: cuerpoHtml
+            });
+            console.log('envio', envio)
+        } catch (e) {
+            console.log('e', e)
+            return new Response(JSON.stringify({ message: `El pedido se creó pero no se pudo notificar por correo electronico a la empresa, favor avisar de este error, pedido creado con ID:${nuevoPedido.id}` }), {
+                status: 201,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        return new Response(JSON.stringify(`Pedido creado con ID:${nuevoPedido.id}`), {
             status: 201,
             headers: {
                 'Content-Type': 'application/json'
@@ -87,6 +118,20 @@ export const POST: RequestHandler = async ({ request }) => {
 
     } catch (e) {
         console.error(e);
-        throw error(500, 'Internal Server Error');
+        if (e instanceof Error && 'response' in e) {
+            return new Response(JSON.stringify(e.response), {
+                status: 500,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        } else {
+            return new Response(JSON.stringify({ error: 'Error desconocido' }), {
+                status: 500,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
     }
 };

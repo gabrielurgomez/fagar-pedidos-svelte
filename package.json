@@ -47,10 +47,12 @@
 	"type": "module",
 	"dependencies": {
 		"@prisma/client": "^5.15.1",
+		"@types/nodemailer": "^6.4.15",
 		"bits-ui": "^0.21.12",
 		"dayjs": "^1.11.12",
 		"dotenv": "^16.4.5",
 		"mysql2": "^3.10.3",
+		"nodemailer": "^6.9.14",
 		"sweetalert2": "^11.12.0"
 	}
 }
