@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ url }) => {
         const fechaExpedicionDocumento = url.searchParams.get('fechaExpedicionDocumento');
 
         if (!cedula || cedula === '') {
-            return new Response('[]', {
+            return new Response(JSON.stringify({ message: 'No se recibio la clave cedula' }), {
                 status: 400,
                 headers: {
                     'Content-Type': 'application/json'
@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         if (!fechaExpedicionDocumento || fechaExpedicionDocumento === '') {
-            return new Response('[]', {
+            return new Response(JSON.stringify({ message: 'No se recibio la clave fechaExpedicionDocumento' }), {
                 status: 400,
                 headers: {
                     'Content-Type': 'application/json'
