@@ -1,6 +1,5 @@
 <script lang="ts">
 	import './styles/app.css';
-	//import IconoGuardar from '$lib/icons/Guardar.svelte';
 	import { logo } from '../lib/images/logo';
 	import Swal from 'sweetalert2';
 	import type { ProductoConsultado } from '../lib/types';
@@ -10,14 +9,10 @@
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 
-	/*const setTabActivo = (tab: string) => {
-		tabActivo = tab;
-	};*/
-
 	type ProductoAgregado = { id: number; nombre: string; cantidad: number; valor: number };
 
 	let estadoActual = { validandoUsuario: false, consultandoProductos: false, creandoPedido: false };
-	let usuario = { numeroCedula: '13177972', fechaExpedicionDocumento: '2003-05-14' };
+	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
 	let productos: ProductoConsultado[] = [];
 	let nombreProductoBuscar = '';
 
