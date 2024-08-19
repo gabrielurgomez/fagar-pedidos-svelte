@@ -41,7 +41,7 @@ export const GET: RequestHandler = async ({ url }) => {
             where: { cedula: cedula, fechaExpedicionDocumento: new Date(fechaExpedicionDocumento).toISOString() }
         })
 
-        console.log('vendedor encontrado', vendedor);
+        //console.log('vendedor encontrado', vendedor);
 
         if (vendedor) {
             return new Response(JSON.stringify(vendedor), {

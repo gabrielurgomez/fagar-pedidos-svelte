@@ -6,7 +6,7 @@ import { transporterSistemas } from '$lib/server/nodemailer';
 
 //recordar que estos datos de producto no estan la bd de admon2 si no en admon,
 //por eso ese type no está en prisma
-type ProductoEnPedido = { id: number; nombre: string; cantidad: number };
+type ProductoEnPedido = { id: number; nombre: string; cantidad: number, valor: number };
 
 
 const prisma = new PrismaClient();
@@ -62,7 +62,8 @@ export const POST: RequestHandler = async ({ request }) => {
                 data: {
                     idPedido: nuevoPedido.id,
                     idProducto: p.id,
-                    cantidad: p.cantidad
+                    cantidad: p.cantidad,
+                    valor: p.valor
                 }
             });
 
