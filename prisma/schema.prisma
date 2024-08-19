@@ -38,6 +38,7 @@ model detallePedido {
   idPedido   Int
   idProducto Int
   cantidad   Int
+  valor      Int
   pedido     pedidos @relation(fields: [idPedido], references: [id])
 
   @@index([idPedido], map: "detallePedido_idPedido_fkey")

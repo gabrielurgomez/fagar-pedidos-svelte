@@ -14,20 +14,40 @@
 		tabActivo = tab;
 	};*/
 
-	type ProductoAgregado = { id: number; nombre: string; cantidad: number };
+	type ProductoAgregado = { id: number; nombre: string; cantidad: number; valor: number };
 
 	let estadoActual = { validandoUsuario: false, consultandoProductos: false, creandoPedido: false };
-	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
+	let usuario = { numeroCedula: '13177972', fechaExpedicionDocumento: '2003-05-14' };
 	let productos: ProductoConsultado[] = [];
 	let nombreProductoBuscar = '';
 
 	let tabActivo = 'crear pedido';
 	let mostrarModalProductos = false;
+
 	let vendedorLogueado = { id: 0, nombre: '' };
+
+	const consultarProductos = async () => {
+		estadoActual.consultandoProductos = true;
+		try {
+			console.log('Consultar productos');
+			let rta = await fetch('/api/productos', {
+				method: 'GET',
+				cache: 'no-cache',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			productos = await rta.json();
+			//console.log('productos', productos);
+			estadoActual.consultandoProductos = false;
+			//return productos;
+			//productosFiltrados = productos;
+		} catch (error) {
+			console.error('Error al consultar vendedores:', error);
+		}
+	};
 
 	let pedido = { fechaEntrega: '', comentario: '', idVendedor: 0 };
 
-	let productoSeleccionado: ProductoAgregado = { id: 0, nombre: '', cantidad: 0 };
+	let productoSeleccionado: ProductoAgregado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
 	let productosAgregados: ProductoAgregado[] = [];
 
 	const validarUsuario = async () => {
@@ -75,25 +95,6 @@
 			});
 		}
 		estadoActual.validandoUsuario = false;
-	};
-
-	const consultarProductos = async () => {
-		estadoActual.consultandoProductos = true;
-		try {
-			console.log('Consultar productos');
-			let rta = await fetch('/api/productos', {
-				method: 'GET',
-				cache: 'no-cache',
-				headers: { 'Content-Type': 'application/json' },
-			});
-			productos = await rta.json();
-			//console.log('productos', productos);
-			estadoActual.consultandoProductos = false;
-			//return productos;
-			//productosFiltrados = productos;
-		} catch (error) {
-			console.error('Error al consultar vendedores:', error);
-		}
 	};
 
 	const crearPedido = async () => {
@@ -206,6 +207,9 @@
 					<div class="w-1/2 mt-2 flex-col">
 						<label for="cantidad" class="input-label mt-4">Cantidad</label>
 						<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
+
+						<label for="valor" class="input-label mt-4">Valor</label>
+						<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
 						<Boton
 							variante="link verdeFagar"
 							onClick={() => {
@@ -225,7 +229,7 @@
 									}
 									productosAgregados = [...productosAgregados, productoSeleccionado];
 									console.log('productosAgregados', productosAgregados);
-									productoSeleccionado = { id: 0, nombre: '', cantidad: 0 };
+									productoSeleccionado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
 									mostrarModalProductos = false;
 								} else {
 									Swal.fire({
@@ -330,6 +334,7 @@
 										<th class="px-1 sm:px-4 sm:text-center text-start">Producto</th>
 										<th class="px-4 hidden sm:flex">Cantidad</th>
 										<th class="px-1 sm:hidden">Cant</th>
+										<th class="px-2 sm:px-4">Valor</th>
 										<th class="px-1 sm:px-4 hidden sm:table-cell">Quitar</th>
 									</tr>
 
@@ -339,6 +344,14 @@
 											<td class="px-1 sm:px-4 text-sm sm:text-base">{productoAgregado.nombre}</td>
 											<td class="px-1 sm:px-4 sm:text-center text-start">
 												{productoAgregado.cantidad}
+											</td>
+											<td class="px-1 sm:px-4 sm:text-center text-start">
+												{new Intl.NumberFormat('es-CO', {
+													style: 'currency',
+													currency: 'COP',
+													minimumFractionDigits: 0,
+													maximumFractionDigits: 0,
+												}).format(productoAgregado.valor)}
 											</td>
 											<td class="flex justify-center px-4 sm:px-0">
 												<button
