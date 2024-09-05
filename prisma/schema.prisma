@@ -21,6 +21,17 @@ model ciudades {
   nombre String @db.VarChar(100)
 }
 
+model detallePedido {
+  id         Int     @id @default(autoincrement())
+  idPedido   Int
+  idProducto Int
+  cantidad   Int
+  valor      Int
+  pedidos    pedidos @relation(fields: [idPedido], references: [id], onDelete: Cascade)
+
+  @@index([idPedido], map: "detallePedido_idPedido_fkey")
+}
+
 model pedidos {
   id            Int             @id @default(autoincrement())
   idVendedor    Int
@@ -33,13 +44,24 @@ model pedidos {
   @@index([idVendedor], map: "pedidos_idVendedor_fkey")
 }
 
-model detallePedido {
-  id         Int     @id @default(autoincrement())
-  idPedido   Int
-  idProducto Int
-  cantidad   Int
-  valor      Int
-  pedido     pedidos @relation(fields: [idPedido], references: [id])
+model clientes {
+  id              Int             @id @default(autoincrement())
+  razonSocial     String          @db.VarChar(100)
+  email           String          @db.VarChar(50)
+  nombreComercial String          @db.VarChar(100)
+  direccion       String          @db.VarChar(100)
+  celular         String          @db.VarChar(20)
+  tipoPersona     String          @db.VarChar(100)
+  nit             String          @unique(map: "nit") @db.VarChar(20)
+  sedesClientes   sedesClientes[]
+}
 
-  @@index([idPedido], map: "detallePedido_idPedido_fkey")
+model sedesClientes {
+  id        Int      @id @default(autoincrement())
+  idCliente Int
+  direccion String   @db.VarChar(100)
+  ciudad    String   @db.VarChar(100)
+  cliente   clientes @relation(fields: [idCliente], references: [id])
+
+  @@index([idCliente], map: "sedesClientes_idCliente_fkey")
 }

@@ -6,9 +6,11 @@
 	import type { ProductoConsultado } from '../lib/types';
 	import { Modal, ModalHeader, ModalBody, ModalFooter } from '$lib/components/Modal';
 	import { Tarjeta, TarjetaHeader, TarjetaBody } from '$lib/components/Tarjeta';
+	import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem } from '$lib/components/Combobox';
 	import { Boton } from '$lib/components/Boton';
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
+	import type { clientes, sedesClientes } from '@prisma/client';
 
 	/*const setTabActivo = (tab: string) => {
 		tabActivo = tab;
@@ -16,7 +18,12 @@
 
 	type ProductoAgregado = { id: number; nombre: string; cantidad: number; valor: number };
 
-	let estadoActual = { validandoUsuario: false, consultandoProductos: false, creandoPedido: false };
+	let estadoActual = {
+		validandoUsuario: false,
+		consultandoProductos: false,
+		creandoPedido: false,
+		consultandoClientes: false,
+	};
 	let usuario = { numeroCedula: '13177972', fechaExpedicionDocumento: '2003-05-14' };
 	let productos: ProductoConsultado[] = [];
 	let nombreProductoBuscar = '';
@@ -25,6 +32,28 @@
 	let mostrarModalProductos = false;
 
 	let vendedorLogueado = { id: 0, nombre: '' };
+
+	let clientes: clientes[] = [];
+	const consultarClientes = async () => {
+		estadoActual.consultandoClientes = true;
+		try {
+			console.log('Consultar clientes');
+			let rta = await fetch('/api/clientes', {
+				method: 'GET',
+				cache: 'no-cache',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			clientes = await rta.json();
+			console.log('clientes', clientes);
+			estadoActual.consultandoClientes = false;
+			return clientes;
+			//productosFiltrados = productos;
+		} catch (error) {
+			console.error('Error al consultar clientes:', error);
+		}
+	};
+
+	let clienteSeleccionado = { id: 0, razonSocial: '' };
 
 	const consultarProductos = async () => {
 		estadoActual.consultandoProductos = true;
@@ -65,7 +94,7 @@
 			return;
 		}
 
-		console.log('se validará el usuario', usuario);
+		//console.log('se validará el usuario', usuario);
 
 		estadoActual.validandoUsuario = true;
 
@@ -85,6 +114,7 @@
 			//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
 			tabActivo = 'crear pedido';
 			consultarProductos();
+			consultarClientes();
 		}
 
 		if (rtaJson.status === 404) {
@@ -156,6 +186,13 @@
 	$: productosFiltrados = productos.filter((producto) => {
 		return producto.nombre.toLowerCase().includes(nombreProductoBuscar.toLowerCase());
 	});
+
+	let inputValue = '';
+	let touchedInput = false;
+	$: clientesFiltrados =
+		inputValue && touchedInput
+			? clientes.filter((cliente) => cliente.razonSocial.includes(inputValue.toLowerCase()))
+			: clientes;
 </script>
 
 <div class={`contenedorPrincipal`}>
@@ -205,10 +242,10 @@
 					</div>
 
 					<div class="w-1/2 mt-2 flex-col">
-						<label for="cantidad" class="input-label mt-4">Cantidad</label>
+						<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
 						<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
 
-						<label for="valor" class="input-label mt-4">Valor</label>
+						<label for="valor" class="input-label mt-4">Valor unit caja</label>
 						<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
 						<Boton
 							variante="link verdeFagar"
@@ -314,6 +351,28 @@
 					<form method="POST" on:submit|preventDefault={crearPedido}>
 						<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
 						<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
+						<label for="Seleccione cliente">Cliente</label>
+						<Combobox items={clientesFiltrados} bind:inputValue bind:touchedInput>
+							<ComboboxInput placeholder="Seleccione..." />
+							<ComboboxContent>
+								{#each clientesFiltrados as cliente (cliente.id)}
+									<ComboboxItem
+										value={cliente.id}
+										label={cliente.razonSocial}
+										on:click={() => {
+											clienteSeleccionado = cliente;
+											console.log('clienteSeleccionado', clienteSeleccionado);
+										}}
+									>
+										{cliente.razonSocial}
+									</ComboboxItem>
+								{:else}
+									<span class="block px-5 py-2 text-sm text-muted-foreground">
+										No results found
+									</span>
+								{/each}
+							</ComboboxContent>
+						</Combobox>
 						<Boton
 							variante="link verdeFagar"
 							onClick={() => {
