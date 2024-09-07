@@ -10,7 +10,7 @@
 	import { Boton } from '$lib/components/Boton';
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
-	import type { clientes, sedesClientes } from '@prisma/client';
+	import type { clientes } from '@prisma/client';
 
 	/*const setTabActivo = (tab: string) => {
 		tabActivo = tab;
