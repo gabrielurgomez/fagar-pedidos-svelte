@@ -1,6 +1,5 @@
 <script lang="ts">
 	import './styles/app.css';
-	//import IconoGuardar from '$lib/icons/Guardar.svelte';
 	import { logo } from '../lib/images/logo';
 	import Swal from 'sweetalert2';
 	import type { ProductoConsultado } from '../lib/types';
@@ -12,10 +11,6 @@
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import type { clientes } from '@prisma/client';
 
-	/*const setTabActivo = (tab: string) => {
-		tabActivo = tab;
-	};*/
-
 	type ProductoAgregado = { id: number; nombre: string; cantidad: number; valor: number };
 
 	let estadoActual = {
@@ -25,6 +20,7 @@
 		consultandoClientes: false,
 	};
 	let usuario = { numeroCedula: '13177972', fechaExpedicionDocumento: '2003-05-14' };
+
 	let productos: ProductoConsultado[] = [];
 	let nombreProductoBuscar = '';
 
