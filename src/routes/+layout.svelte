@@ -11,6 +11,15 @@
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import type { clientes, sedesClientes } from '@prisma/client';
 
+	let pedido = {
+		idCliente: 0,
+		clienteSedeCiudad: '',
+		clienteSedeDireccion: '',
+		fechaEntrega: '',
+		comentario: '',
+		idVendedor: 0,
+	};
+
 	type ProductoAgregado = { id: number; nombre: string; cantidad: number; valor: number };
 
 	let estadoActual = {
@@ -54,7 +63,7 @@
 		razonSocial: '',
 		sedesClientes: [] as sedesClientes[],
 	};
-	let sedeSeleccionada = { ciudad: '', direccion: '' };
+	let sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 
 	const consultarProductos = async () => {
 		estadoActual.consultandoProductos = true;
@@ -74,8 +83,6 @@
 			console.error('Error al consultar vendedores:', error);
 		}
 	};
-
-	let pedido = { fechaEntrega: '', comentario: '', idVendedor: 0 };
 
 	let productoSeleccionado: ProductoAgregado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
 	let productosAgregados: ProductoAgregado[] = [];
@@ -138,6 +145,29 @@
 			});
 			return;
 		}
+
+		if (clienteSeleccionado.id === 0) {
+			Swal.fire({
+				icon: 'info',
+				title: 'Cliente no seleccionado',
+				text: 'Debe seleccionar un cliente para el pedido',
+			});
+			return;
+		}
+		pedido.idCliente = clienteSeleccionado.id;
+
+		if (sedeSeleccionada.id === 0) {
+			Swal.fire({
+				icon: 'info',
+				title: 'Sede no seleccionada',
+				text: 'Debe seleccionar una sede para el pedido',
+			});
+			return;
+		}
+
+		pedido.clienteSedeCiudad = sedeSeleccionada.ciudad;
+		pedido.clienteSedeDireccion = sedeSeleccionada.direccion;
+
 		if (productosAgregados.length === 0) {
 			Swal.fire({
 				icon: 'info',
@@ -146,8 +176,10 @@
 			});
 			return;
 		}
-		//console.log('Se creará el pedido', pedido);
-		//console.log('con los productos', productosAgregados);
+		console.log('Se creará el pedido', pedido);
+		console.log('con los productos', productosAgregados);
+
+		return;
 
 		estadoActual.creandoPedido = true;
 
@@ -383,8 +415,12 @@
 										value={cliente.id}
 										label={cliente.razonSocial}
 										on:click={() => {
-											sedeSeleccionada = { ciudad: '', direccion: '' };
-											clienteSeleccionado = cliente;
+											sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
+											clienteSeleccionado = {
+												id: cliente.id,
+												razonSocial: cliente.razonSocial,
+												sedesClientes: cliente.sedesClientes,
+											};
 											console.log('clienteSeleccionado', clienteSeleccionado);
 										}}
 									></ComboboxItem>

@@ -33,15 +33,20 @@ model detallePedido {
 }
 
 model pedidos {
-  id            Int             @id @default(autoincrement())
-  idVendedor    Int
-  fechaEntrega  DateTime        @db.Date
-  creado        DateTime        @db.Date
-  comentario    String          @db.VarChar(100)
-  detallePedido detallePedido[]
-  vendedores    vendedores      @relation(fields: [idVendedor], references: [id])
+  id                   Int             @id @default(autoincrement())
+  idCliente            Int
+  clienteSedeCiudad    String          @db.VarChar(100)
+  clienteSedeDireccion String          @db.VarChar(100)
+  idVendedor           Int
+  fechaEntrega         DateTime        @db.Date
+  creado               DateTime        @db.Date
+  comentario           String          @db.VarChar(100)
+  detallePedido        detallePedido[]
+  vendedores           vendedores      @relation(fields: [idVendedor], references: [id])
+  clientes             clientes        @relation(fields: [idCliente], references: [id])
 
   @@index([idVendedor], map: "pedidos_idVendedor_fkey")
+  @@index([idCliente], map: "pedidos_idCliente_fkey")
 }
 
 model clientes {
@@ -54,6 +59,7 @@ model clientes {
   tipoPersona     String          @db.VarChar(100)
   nit             String          @unique(map: "nit") @db.VarChar(20)
   sedesClientes   sedesClientes[]
+  pedidos         pedidos[]
 }
 
 model sedesClientes {
