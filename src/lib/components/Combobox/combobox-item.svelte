@@ -17,26 +17,22 @@
 		`flex
         gap-2
         items-center
-        justify-between
-        h-8
-        w-full
+        justify-between        
         cursor-pointer
         hover:bg-gray-100
         hover:rounded-lg
         rounded-button
-        pl-3
-        pr-1.5
+        px-3
+        py-1
         text-sm
-        capitalize
-        transition-all
-        duration-75
         data-[highlighted]:bg-gray-100
+        overflow-hidden
         truncate
         text-ellipsis`,
 		customClasses,
 	)}
 	on:click
 >
-	<div class="my-4 border">{label}</div>
+	<div class="w-5/6 overflow-hidden text-ellipsis whitespace-nowrap">{label}</div>
 	<Combobox.ItemIndicator asChild={false}><IconoCheckmark tamano={20} /></Combobox.ItemIndicator>
 </Combobox.Item>
