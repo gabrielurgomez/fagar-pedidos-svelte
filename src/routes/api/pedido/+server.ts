@@ -17,7 +17,34 @@ export const POST: RequestHandler = async ({ request }) => {
         const { fechaHoraActualISO8601 } = obtenerFechaYHoraActual();
         //console.log('fechaHoraActualISO8601', fechaHoraActualISO8601);
 
-        const { idVendedor, fechaEntrega, comentario, productos, nombreVendedor } = await request.json();
+        const { idCliente, clienteSedeCiudad, clienteSedeDireccion, idVendedor, fechaEntrega, comentario, productos, nombreVendedor } = await request.json();
+
+        if (!idCliente || idCliente === 0) {
+            return new Response(JSON.stringify({ error: 'No se recibio la clave idCliente' }), {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        if (!clienteSedeCiudad || clienteSedeCiudad === '') {
+            return new Response(JSON.stringify({ error: 'No se recibio la clave clienteSedeCiudad' }), {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        if (!clienteSedeDireccion || clienteSedeDireccion === '') {
+            return new Response(JSON.stringify({ error: 'No se recibio la clave clienteSedeDireccion' }), {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
 
         if (!idVendedor || idVendedor === 0) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave idVendedor' }), {
@@ -49,6 +76,9 @@ export const POST: RequestHandler = async ({ request }) => {
 
         const nuevoPedido = await prisma.pedidos.create({
             data: {
+                idCliente: idCliente,
+                clienteSedeCiudad: clienteSedeCiudad,
+                clienteSedeDireccion: clienteSedeDireccion,
                 idVendedor: idVendedor,
                 fechaEntrega: formearFechaISO8601(fechaEntrega),
                 creado: fechaHoraActualISO8601,
@@ -92,14 +122,14 @@ export const POST: RequestHandler = async ({ request }) => {
 
         //se notifica por correo electronico a la empresa
         try {
-            const envio = await transporterSistemas.sendMail({
+            await transporterSistemas.sendMail({
                 from: "sistemas@fagarcomercial.com",
                 to: 'info@colsysnet.com',
                 replyTo: "sistemas@fagarcomercial.com",
                 subject: `PEDIDOS - Nuevo pedido ID #${nuevoPedido.id}`,
                 html: cuerpoHtml
             });
-            console.log('envio', envio)
+            //console.log('envio', envio)
         } catch (e) {
             console.log('e', e)
             return new Response(JSON.stringify({ message: `El pedido se creó pero no se pudo notificar por correo electronico a la empresa, favor avisar de este error, pedido creado con ID:${nuevoPedido.id}` }), {

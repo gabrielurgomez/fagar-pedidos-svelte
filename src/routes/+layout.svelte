@@ -38,7 +38,9 @@
 
 	let vendedorLogueado = { id: 0, nombre: '' };
 
-	let clientes: clientes[] = [];
+	type ClienteConSedes = clientes & { sedesClientes: sedesClientes[] };
+	let clientes: ClienteConSedes[] = [];
+
 	const consultarClientes = async () => {
 		estadoActual.consultandoClientes = true;
 		try {
@@ -179,8 +181,6 @@
 		console.log('Se creará el pedido', pedido);
 		console.log('con los productos', productosAgregados);
 
-		return;
-
 		estadoActual.creandoPedido = true;
 
 		const rtaPedidoJson = await fetch('/api/pedido', {
@@ -193,7 +193,7 @@
 			}),
 		});
 
-		//console.log('rtaPedidoJson', rtaPedidoJson);
+		console.log('rtaPedidoJson', rtaPedidoJson);
 
 		if (rtaPedidoJson.status === 201) {
 			let rta = await rtaPedidoJson.json();
@@ -203,7 +203,16 @@
 				text: rta.message,
 			});
 			productosAgregados = [];
-			pedido = { fechaEntrega: '', comentario: '', idVendedor: 0 };
+			pedido = {
+				idCliente: 0,
+				clienteSedeCiudad: '',
+				clienteSedeDireccion: '',
+				fechaEntrega: '',
+				comentario: '',
+				idVendedor: 0,
+			};
+			sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
+			clienteSeleccionado = { id: 0, razonSocial: '', sedesClientes: [] };
 		} else {
 			let rtaError = await rtaPedidoJson.json();
 			Swal.fire({
@@ -407,7 +416,10 @@
 						<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
 						<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
 						<label for="Seleccione cliente" class="input-label">Cliente</label>
-						<Combobox items={clientesFiltrados} bind:inputValue bind:touchedInput>
+						<Combobox
+							items={clientesFiltrados}
+							selected={{ value: clienteSeleccionado.id, label: clienteSeleccionado.razonSocial }}
+						>
 							<ComboboxInput placeholder="Seleccione..." />
 							<ComboboxContent>
 								{#each clientesFiltrados as cliente (cliente.id)}
