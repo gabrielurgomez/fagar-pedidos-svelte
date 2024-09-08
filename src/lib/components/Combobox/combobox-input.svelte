@@ -13,10 +13,10 @@
 	<Combobox.Input
 		class={cn(
 			`w-full mt-3 px-3 truncate rounded-lg border text-md transition-colors
-	focus:outline-none
-	focus:ring-2
-	focus:ring-[#00963d]
-	focus:ring-offset-2`,
+			focus:outline-none
+			focus:ring-2
+			focus:ring-[#00963d]
+			focus:ring-offset-2`,
 			customClasses,
 		)}
 		{...$$restProps}
