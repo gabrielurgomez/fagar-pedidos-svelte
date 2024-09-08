@@ -1,4 +1,13 @@
-<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
-<div class="w-full z-2 bg-white absolute sm:w-1/2 rounded-md border h-5/6">
-	<slot></slot>
-</div>
+<script lang="ts">
+	import { Dialog } from 'bits-ui';
+	export let open: boolean = false;
+</script>
+
+<Dialog.Root
+	preventScroll={true}
+	onOutsideClick={(e) => e.preventDefault()}
+	{open}
+	{...$$restProps}
+>
+	<slot />
+</Dialog.Root>

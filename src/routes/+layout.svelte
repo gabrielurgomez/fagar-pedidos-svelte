@@ -3,13 +3,13 @@
 	import { logo } from '../lib/images/logo';
 	import Swal from 'sweetalert2';
 	import type { ProductoConsultado } from '../lib/types';
-	import { Modal, ModalHeader, ModalBody, ModalFooter } from '$lib/components/Modal';
-	import { Tarjeta, TarjetaHeader, TarjetaBody } from '$lib/components/Tarjeta';
+	import { Modal, ModalHeader, ModalContent, ModalFooter } from '$lib/components/Modal';
 	import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem } from '$lib/components/Combobox';
+	import { Tarjeta, TarjetaHeader, TarjetaBody } from '$lib/components/Tarjeta';
 	import { Boton } from '$lib/components/Boton';
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
-	import type { clientes } from '@prisma/client';
+	import type { clientes, sedesClientes } from '@prisma/client';
 
 	type ProductoAgregado = { id: number; nombre: string; cantidad: number; valor: number };
 
@@ -19,10 +19,10 @@
 		creandoPedido: false,
 		consultandoClientes: false,
 	};
+
 	let usuario = { numeroCedula: '13177972', fechaExpedicionDocumento: '2003-05-14' };
 
 	let productos: ProductoConsultado[] = [];
-	let nombreProductoBuscar = '';
 
 	let tabActivo = 'crear pedido';
 	let mostrarModalProductos = false;
@@ -49,7 +49,12 @@
 		}
 	};
 
-	let clienteSeleccionado = { id: 0, razonSocial: '' };
+	let clienteSeleccionado = {
+		id: 0,
+		razonSocial: '',
+		sedesClientes: [] as sedesClientes[],
+	};
+	let sedeSeleccionada = { ciudad: '', direccion: '' };
 
 	const consultarProductos = async () => {
 		estadoActual.consultandoProductos = true;
@@ -179,6 +184,16 @@
 		estadoActual.creandoPedido = false;
 	};
 
+	let nombreProductoBuscar = '';
+	/*
+	SI FUERA COMBOBOX
+	let touchedInputProductos = false;
+	$: productosFiltrados =
+		inputValue && touchedInput
+			? productos.filter((producto) => producto.nombre.includes(nombreProductoBuscar.toLowerCase()))
+			: productos;
+	*/
+
 	$: productosFiltrados = productos.filter((producto) => {
 		return producto.nombre.toLowerCase().includes(nombreProductoBuscar.toLowerCase());
 	});
@@ -189,100 +204,112 @@
 		inputValue && touchedInput
 			? clientes.filter((cliente) => cliente.razonSocial.includes(inputValue.toLowerCase()))
 			: clientes;
+
+	$: mostrarModalProductos = false;
+	function handleOpenChange(estado: boolean) {
+		console.log('handleOpenChange, estado=>', estado);
+		mostrarModalProductos = estado;
+	}
 </script>
 
 <div class={`contenedorPrincipal`}>
-	{#if mostrarModalProductos}
-		<Modal>
-			<ModalHeader titulo={'Seleccione producto'}>Seleccione Producto</ModalHeader>
-			<ModalBody>
-				<input
-					class="input-texto mb-4"
-					type="text"
-					placeholder="Filtrar productos"
-					bind:value={nombreProductoBuscar}
-				/>
-
-				{#if estadoActual.consultandoProductos}
-					<PuntosCargando />
-				{:else}
-					<div class="overflow-y-auto mt-4 w-full flex h-1/2 border rounded-lg">
-						{#if productosFiltrados.length > 0}
-							<table>
-								<thead class="sticky top-0 bg-white">
-									<tr>
-										<th class="px-4">ID</th>
-										<th class="px-4">Producto</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each productosFiltrados as producto}
-										<tr
-											class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200 text-slate-600`}
-											on:click={() => {
-												productoSeleccionado.id = producto.id;
-												productoSeleccionado.nombre = producto.nombre;
-												//mostrarModalProductos = false;
-												console.log('productoSeleccionado', productoSeleccionado);
-											}}
-										>
-											<td class="px-4">{producto.id}</td>
-											<td class="px-4">{producto.nombre}</td>
+	<Modal open={mostrarModalProductos} onOpenChange={handleOpenChange}>
+		<ModalContent>
+			<ModalHeader>Seleccione Producto</ModalHeader>
+			{#if estadoActual.consultandoProductos}
+				<PuntosCargando />
+			{:else}
+				<div class="w-full px-4">
+					<div class="mt-4">
+						<input
+							class="input-texto mb-4 mt-4"
+							type="text"
+							placeholder="Filtrar productos"
+							bind:value={nombreProductoBuscar}
+						/>
+						<div class="h-60 sm:h-96 overflow-y-auto mt-4">
+							{#if productosFiltrados.length > 0}
+								<table class="w-full">
+									<thead class="sticky top-0 bg-white">
+										<tr>
+											<th class="px-4">ID</th>
+											<th class="px-4">Producto</th>
 										</tr>
-									{/each}
-								</tbody>
-							</table>
-						{:else}
-							<div>No hay coincidencias</div>
-						{/if}
+									</thead>
+									<tbody>
+										{#each productosFiltrados as producto}
+											<tr
+												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200 text-slate-600`}
+												on:click={() => {
+													productoSeleccionado.id = producto.id;
+													productoSeleccionado.nombre = producto.nombre;
+													//mostrarModalProductos = false;
+													console.log('productoSeleccionado', productoSeleccionado);
+												}}
+											>
+												<td class="px-4">{producto.id}</td>
+												<td class="px-4">{producto.nombre}</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							{:else}
+								<div class="text-center">No hay coincidencias</div>
+							{/if}
+						</div>
 					</div>
+					<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
+					<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
 
-					<div class="w-1/2 mt-2 flex-col">
-						<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
-						<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
+					<label for="valor" class="input-label mt-4">Valor unit caja</label>
+					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
+					<Boton
+						variante="link verdeFagar"
+						onClick={() => {
+							console.log('se agregará el producto', productoSeleccionado);
 
-						<label for="valor" class="input-label mt-4">Valor unit caja</label>
-						<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
-						<Boton
-							variante="link verdeFagar"
-							onClick={() => {
-								console.log('se agregará el producto', productoSeleccionado);
-
-								const productoExiste = productosAgregados.some(
-									(producto) => producto.id === productoSeleccionado.id,
-								);
-								if (!productoExiste) {
-									if (productoSeleccionado.cantidad <= 0) {
-										Swal.fire({
-											icon: 'info',
-											title: 'Cantidad no válida',
-											text: 'La cantidad del producto debe ser mayor a 0',
-										});
-										return;
-									}
-									productosAgregados = [...productosAgregados, productoSeleccionado];
-									console.log('productosAgregados', productosAgregados);
-									productoSeleccionado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
-									mostrarModalProductos = false;
-								} else {
+							const productoExiste = productosAgregados.some(
+								(producto) => producto.id === productoSeleccionado.id,
+							);
+							if (!productoExiste) {
+								if (productoSeleccionado.cantidad <= 0) {
 									Swal.fire({
 										icon: 'info',
-										title: 'Producto ya agregado',
-										text: 'El producto seleccionado ya fue agregado al pedido',
+										title: 'Cantidad no válida',
+										text: 'La cantidad del producto debe ser mayor a 0',
 									});
+									return;
 								}
-							}}
-						>
-							Agregar al pedido
-						</Boton>
-					</div>
-				{/if}
-			</ModalBody>
+								if (productoSeleccionado.valor <= 0) {
+									Swal.fire({
+										icon: 'info',
+										title: 'Valor no válido',
+										text: 'El valor del producto debe ser mayor a 0',
+									});
+									return;
+								}
+								productosAgregados = [...productosAgregados, productoSeleccionado];
+								console.log('productosAgregados', productosAgregados);
+								productoSeleccionado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
+								mostrarModalProductos = false;
+							} else {
+								Swal.fire({
+									icon: 'info',
+									title: 'Producto ya agregado',
+									text: 'El producto seleccionado ya fue agregado al pedido',
+								});
+							}
+						}}
+					>
+						Agregar al pedido
+					</Boton>
+				</div>
+			{/if}
 			<ModalFooter>
 				<Boton variante="link rojo" onClick={() => (mostrarModalProductos = false)}>Cancelar</Boton>
 			</ModalFooter>
-		</Modal>
-	{/if}
+		</ModalContent>
+	</Modal>
 
 	<div class="flex flex-col items-center">
 		<img alt="logo" src={logo} class="w-40 h-25 sm:w-80 sm:h-45" />
@@ -347,7 +374,7 @@
 					<form method="POST" on:submit|preventDefault={crearPedido}>
 						<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
 						<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
-						<label for="Seleccione cliente">Cliente</label>
+						<label for="Seleccione cliente" class="input-label">Cliente</label>
 						<Combobox items={clientesFiltrados} bind:inputValue bind:touchedInput>
 							<ComboboxInput placeholder="Seleccione..." />
 							<ComboboxContent>
@@ -356,12 +383,11 @@
 										value={cliente.id}
 										label={cliente.razonSocial}
 										on:click={() => {
+											sedeSeleccionada = { ciudad: '', direccion: '' };
 											clienteSeleccionado = cliente;
 											console.log('clienteSeleccionado', clienteSeleccionado);
 										}}
-									>
-										{cliente.razonSocial}
-									</ComboboxItem>
+									></ComboboxItem>
 								{:else}
 									<span class="block px-5 py-2 text-sm text-muted-foreground">
 										No results found
@@ -369,6 +395,30 @@
 								{/each}
 							</ComboboxContent>
 						</Combobox>
+						{#if clienteSeleccionado.sedesClientes.length > 0}
+							<label for="Seleccione sede del cliente" class="input-label">
+								Seleccione sede del cliente
+							</label>
+							<Combobox items={clientesFiltrados} bind:inputValue bind:touchedInput>
+								<ComboboxInput placeholder="Seleccione..." />
+								<ComboboxContent>
+									{#each clienteSeleccionado.sedesClientes as sede}
+										<ComboboxItem
+											value={sede.id}
+											label={`${sede.ciudad} - ${sede.direccion}`}
+											on:click={() => {
+												sedeSeleccionada = sede;
+												console.log('sedeSeleccionada', sedeSeleccionada);
+											}}
+										></ComboboxItem>
+									{:else}
+										<span class="block px-5 py-2 text-sm text-muted-foreground">
+											No results found
+										</span>
+									{/each}
+								</ComboboxContent>
+							</Combobox>
+						{/if}
 						<Boton
 							variante="link verdeFagar"
 							onClick={() => {
@@ -379,10 +429,81 @@
 						>
 							Agregar producto
 						</Boton>
+						<!-- ESTO ES SI FUERA A IMPLEMENTAR LA LISTA DE PRODUCTOS A AGREGAR EN COMBOBOX Y NO EN MODAL
+							<div class="border-t my-4"></div>
+							<label for="Seleccione cliente">Agregue productos</label>
+							
+							{#if estadoActual.consultandoProductos}
+								<PuntosCargando />
+							{:else}
+								<Combobox
+									items={productosFiltrados}
+									bind:nombreProductoBuscar
+									bind:touchedInputProductos
+								>
+									<ComboboxInput placeholder="Seleccione..." />
+									<ComboboxContent>
+										{#each productosFiltrados as producto}
+											<ComboboxItem
+												value={producto.id}
+												label={producto.nombre}
+												on:click={() => {
+													productoSeleccionado.id = producto.id;
+													productoSeleccionado.nombre = producto.nombre;
+													//mostrarModalProductos = false;
+													console.log('productoSeleccionado', productoSeleccionado);
+												}}
+											>
+												ID #{producto.id}-{producto.nombre}
+											</ComboboxItem>
+										{/each}
+									</ComboboxContent>
+								</Combobox>
+							{/if}
+					
+						<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
+						<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
+
+						<label for="valor" class="input-label mt-4">Valor unit caja</label>
+						<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
+						<Boton
+							variante="link verdeFagar"
+							onClick={() => {
+								console.log('se agregará el producto', productoSeleccionado);
+
+								const productoExiste = productosAgregados.some(
+									(producto) => producto.id === productoSeleccionado.id,
+								);
+								if (!productoExiste) {
+									if (productoSeleccionado.cantidad <= 0) {
+										Swal.fire({
+											icon: 'info',
+											title: 'Cantidad no válida',
+											text: 'La cantidad del producto debe ser mayor a 0',
+										});
+										return;
+									}
+									productosAgregados = [...productosAgregados, productoSeleccionado];
+									console.log('productosAgregados', productosAgregados);
+									productoSeleccionado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
+									mostrarModalProductos = false;
+								} else {
+									Swal.fire({
+										icon: 'info',
+										title: 'Producto ya agregado',
+										text: 'El producto seleccionado ya fue agregado al pedido',
+									});
+								}
+							}}
+						>
+							Agregar al pedido
+						</Boton>
+						-->
+
 						<br />
 						<!--tabla que muestra los productos agregados-->
 						{#if productosAgregados.length > 0}
-							<div class="mb-4 border rounded-lg pt-2">
+							<div class="mb-4 rounded-lg pt-2">
 								<table class="mb-4">
 									<tr>
 										<th class="px-2 sm:px-4">ID</th>

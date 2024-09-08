@@ -15,27 +15,28 @@
 	{label}
 	class={cn(
 		`flex
+        gap-2
         items-center
-       justify-between
+        justify-between
         h-8
         w-full
         cursor-pointer
         hover:bg-gray-100
-        hover:rounded
-        select-none
+        hover:rounded-lg
         rounded-button
-        py-3
         pl-3
         pr-1.5
         text-sm
         capitalize
         transition-all
         duration-75
-        data-[highlighted]:bg-gray-100`,
+        data-[highlighted]:bg-gray-100
+        truncate
+        text-ellipsis`,
 		customClasses,
 	)}
 	on:click
 >
-	<slot />
+	<div class="my-4 border">{label}</div>
 	<Combobox.ItemIndicator asChild={false}><IconoCheckmark tamano={20} /></Combobox.ItemIndicator>
 </Combobox.Item>

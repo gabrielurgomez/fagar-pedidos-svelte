@@ -8,7 +8,7 @@
 
 <Combobox.Content
 	class={cn(
-		`w-full bg-white rounded-xl border border-muted px-1 py-3 shadow-popover outline-none`,
+		`w-full bg-white rounded-xl border border-muted px-1 py-3 flex flex-col`,
 		customClasses,
 	)}
 	sideOffset={8}

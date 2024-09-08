@@ -19,7 +19,7 @@
 	}
 
 	$: if (variante === 'link verdeFagar') {
-		clases = 'hover:font-bold rounded text-[#00732f]';
+		clases = 'hover:underline hover:underline-offset-2 rounded text-[#00732f]';
 	}
 
 	$: if (variante === 'link rojo') {
