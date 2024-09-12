@@ -239,12 +239,21 @@
 		return producto.nombre.toLowerCase().includes(nombreProductoBuscar.toLowerCase());
 	});
 
-	let inputValue = '';
-	let touchedInput = false;
+	let clienteBuscar = '';
+	let touchedInputCliente = false;
 	$: clientesFiltrados =
-		inputValue && touchedInput
-			? clientes.filter((cliente) => cliente.razonSocial.includes(inputValue.toLowerCase()))
+		clienteBuscar && touchedInputCliente
+			? clientes.filter((cliente) => cliente.razonSocial.includes(clienteBuscar.toLowerCase()))
 			: clientes;
+
+	let sedeBuscar = '';
+	let touchedInputSedesCliente = false;
+	$: sedesFiltrados =
+		sedeBuscar && touchedInputSedesCliente
+			? clienteSeleccionado.sedesClientes.filter((sede) =>
+					sede.direccion.includes(sedeBuscar.toLowerCase()),
+				)
+			: clienteSeleccionado.sedesClientes;
 
 	$: mostrarModalProductos = false;
 	function handleOpenChange(estado: boolean) {
@@ -415,9 +424,11 @@
 					<form method="POST" on:submit|preventDefault={crearPedido}>
 						<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
 						<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
-						<label for="Seleccione cliente" class="input-label">Cliente</label>
+						<label for="Seleccione cliente" class="input-label">Seleccione cliente</label>
 						<Combobox
 							items={clientesFiltrados}
+							bind:clienteBuscar
+							bind:touchedInputCliente
 							selected={{ value: clienteSeleccionado.id, label: clienteSeleccionado.razonSocial }}
 						>
 							<ComboboxInput placeholder="Seleccione..." />
@@ -447,7 +458,12 @@
 							<label for="Seleccione sede del cliente" class="input-label">
 								Seleccione sede del cliente
 							</label>
-							<Combobox items={clientesFiltrados} bind:inputValue bind:touchedInput>
+							<Combobox
+								items={sedesFiltrados}
+								bind:sedeBuscar
+								bind:touchedInputSedesCliente
+								selected={{ value: sedeSeleccionada.id, label: sedeSeleccionada.direccion }}
+							>
 								<ComboboxInput placeholder="Seleccione..." />
 								<ComboboxContent>
 									{#each clienteSeleccionado.sedesClientes as sede}
