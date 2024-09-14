@@ -1,11 +1,14 @@
 ## PEDIDOS
 
-Creación de pedidos por parte del vendedor
+Creating orders from the seller to the main admin panel working in another different repo
 
-## Stack
+## Frontend/Backend
+TypeScript
+Svelte, Sveltik
+Using http petittions to connect to the database
 
-Svelte, Sveltik, Prisma y Mysql
-
-## Estilos
-
+## Styles
 Twailwind
+
+## Databases
+MySQL using ORM Prisma
