@@ -1,7 +1,11 @@
-##PEDIDOS
+## PEDIDOS
 
 Creación de pedidos por parte del vendedor
 
-##Stack
+## Stack
 
 Svelte, Sveltik, Prisma y Mysql
+
+## Estilos
+
+Twailwind
