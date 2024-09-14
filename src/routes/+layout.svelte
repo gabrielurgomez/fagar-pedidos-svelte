@@ -29,7 +29,7 @@
 		consultandoClientes: false,
 	};
 
-	let usuario = { numeroCedula: '13177972', fechaExpedicionDocumento: '2003-05-14' };
+	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
 
 	let productos: ProductoConsultado[] = [];
 
