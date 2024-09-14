@@ -366,7 +366,7 @@
 	</div>
 	{#if vendedorLogueado.id === 0}
 		<Tarjeta>
-			<TarjetaHeader titulo={'Validación de usuario.'} />
+			<TarjetaHeader titulo={'Validación de usuario'} />
 			<TarjetaBody>
 				<form class="flex flex-col" on:submit|preventDefault={validarUsuario}>
 					<label for="usuario" class="input-label">Numero cedula</label>
