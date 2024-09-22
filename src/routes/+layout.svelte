@@ -18,6 +18,7 @@
 		fechaEntrega: '',
 		comentario: '',
 		idVendedor: 0,
+		estado: 'creado',
 	};
 
 	type ProductoAgregado = {
@@ -205,14 +206,13 @@
 				nombreVendedor: vendedorLogueado.nombre,
 			}),
 		});
-
 		console.log('rtaPedidoJson', rtaPedidoJson);
-
 		if (rtaPedidoJson.status === 201) {
 			let rta = await rtaPedidoJson.json();
+			console.log('rta', rta);
 			Swal.fire({
 				icon: 'success',
-				title: 'Pedido creado',
+				title: 'Creado',
 				text: rta.message,
 			});
 			productosAgregados = [];
@@ -223,6 +223,7 @@
 				fechaEntrega: '',
 				comentario: '',
 				idVendedor: 0,
+				estado: 'creado',
 			};
 			sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 			clienteSeleccionado = { id: 0, razonSocial: '', sedesClientes: [] };

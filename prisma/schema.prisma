@@ -42,6 +42,7 @@ model pedidos {
   idVendedor           Int
   fechaEntrega         DateTime        @db.Date
   creado               DateTime        @db.Date
+  estado               String          @db.VarChar(50)
   comentario           String          @db.VarChar(100)
   detallePedido        detallePedido[]
   clientes             clientes        @relation(fields: [idCliente], references: [id])
