@@ -1,4 +1,5 @@
 export type ProductoConsultado = {
     id: number,
-    nombre: string
+    nombre: string,
+    cantidadEnvases: number
 }

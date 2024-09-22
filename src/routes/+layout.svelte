@@ -20,7 +20,13 @@
 		idVendedor: 0,
 	};
 
-	type ProductoAgregado = { id: number; nombre: string; cantidad: number; valor: number };
+	type ProductoAgregado = {
+		id: number;
+		nombre: string;
+		cantidadEnvases: number;
+		cantidad: number;
+		valor: number;
+	};
 
 	let estadoActual = {
 		validandoUsuario: false,
@@ -86,7 +92,13 @@
 		}
 	};
 
-	let productoSeleccionado: ProductoAgregado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
+	let productoSeleccionado: ProductoAgregado = {
+		id: 0,
+		nombre: '',
+		cantidad: 0,
+		cantidadEnvases: 0,
+		valor: 0,
+	};
 	let productosAgregados: ProductoAgregado[] = [];
 
 	const validarUsuario = async () => {
@@ -139,6 +151,7 @@
 
 	const crearPedido = async () => {
 		console.clear();
+		console.log('se creará el pedido', pedido);
 		if (pedido.fechaEntrega === '') {
 			Swal.fire({
 				icon: 'info',
@@ -293,6 +306,7 @@
 												on:click={() => {
 													productoSeleccionado.id = producto.id;
 													productoSeleccionado.nombre = producto.nombre;
+													productoSeleccionado.cantidadEnvases = producto.cantidadEnvases;
 													//mostrarModalProductos = false;
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}
@@ -340,7 +354,13 @@
 								}
 								productosAgregados = [...productosAgregados, productoSeleccionado];
 								console.log('productosAgregados', productosAgregados);
-								productoSeleccionado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
+								productoSeleccionado = {
+									id: 0,
+									nombre: '',
+									cantidad: 0,
+									cantidadEnvases: 0,
+									valor: 0,
+								};
 								mostrarModalProductos = false;
 							} else {
 								Swal.fire({
@@ -575,6 +595,7 @@
 										<th class="px-4 hidden sm:flex">Cantidad</th>
 										<th class="px-1 sm:hidden">Cant</th>
 										<th class="px-2 sm:px-4">Valor</th>
+										<th class="px-2 sm:px-4">Total</th>
 										<th class="px-1 sm:px-4 hidden sm:table-cell">Quitar</th>
 									</tr>
 
@@ -585,6 +606,7 @@
 											<td class="px-1 sm:px-4 sm:text-center text-start">
 												{productoAgregado.cantidad}
 											</td>
+
 											<td class="px-1 sm:px-4 sm:text-center text-start">
 												{new Intl.NumberFormat('es-CO', {
 													style: 'currency',
@@ -593,8 +615,17 @@
 													maximumFractionDigits: 0,
 												}).format(productoAgregado.valor)}
 											</td>
+											<td class="px-1 sm:px-4 sm:text-center text-start">
+												{new Intl.NumberFormat('es-CO', {
+													style: 'currency',
+													currency: 'COP',
+													minimumFractionDigits: 0,
+													maximumFractionDigits: 0,
+												}).format(productoAgregado.cantidad * productoAgregado.valor)}
+											</td>
 											<td class="flex justify-center px-4 sm:px-0">
 												<button
+													type="button"
 													on:click={() => {
 														productosAgregados = productosAgregados.filter(
 															(producto) => producto.id !== productoAgregado.id,
@@ -607,12 +638,26 @@
 										</tr>
 									{/each}
 								</table>
+								<label for="w3review" class="mt-4">
+									Total pedido:
+									{new Intl.NumberFormat('es-CO', {
+										style: 'currency',
+										currency: 'COP',
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 0,
+									}).format(
+										productosAgregados.reduce(
+											(acc, producto) => acc + producto.cantidad * producto.valor,
+											0,
+										),
+									)}
+								</label>
 							</div>
 						{/if}
 						<label for="w3review" class="mt-4">Comentarios generales:</label>
 						<textarea
 							bind:value={pedido.comentario}
-							class="input-texto"
+							class="input-texto mt-2"
 							id="w3review"
 							name="w3review"
 							rows="4"
