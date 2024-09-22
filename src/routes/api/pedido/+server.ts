@@ -1,5 +1,6 @@
 //import { error } from '@sveltejs/kit';
-import type { RequestHandler } from '@sveltejs/kit';
+import { type RequestHandler } from '@sveltejs/kit';
+
 import { PrismaClient } from '@prisma/client';
 import { obtenerFechaYHoraActual, formearFechaISO8601 } from '$lib/server/fechas';
 import { transporterSistemas } from '$lib/server/nodemailer';
@@ -82,6 +83,7 @@ export const POST: RequestHandler = async ({ request }) => {
                 idVendedor: idVendedor,
                 fechaEntrega: formearFechaISO8601(fechaEntrega),
                 creado: fechaHoraActualISO8601,
+                estado: 'creado',
                 comentario: comentario,
             }
         });
@@ -142,7 +144,7 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        return new Response(JSON.stringify(`Pedido creado con ID:${nuevoPedido.id}`), {
+        return new Response(JSON.stringify({ message: `Pedido creado con ID ${nuevoPedido.id}` }), {
             status: 201,
             headers: {
                 'Content-Type': 'application/json'
