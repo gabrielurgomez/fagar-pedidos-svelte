@@ -22,12 +22,14 @@ model ciudades {
 }
 
 model detallePedido {
-  id         Int     @id @default(autoincrement())
-  idPedido   Int
-  idProducto Int
-  cantidad   Int
-  valor      Int
-  pedidos    pedidos @relation(fields: [idPedido], references: [id], onDelete: Cascade)
+  id              Int     @id @default(autoincrement())
+  idPedido        Int
+  idProducto      Int
+  nombreProducto  String  @db.VarChar(300)
+  cantidadEnvases Int
+  cantidad        Int
+  valor           Int
+  pedidos         pedidos @relation(fields: [idPedido], references: [id], onDelete: Cascade)
 
   @@index([idPedido], map: "detallePedido_idPedido_fkey")
 }
