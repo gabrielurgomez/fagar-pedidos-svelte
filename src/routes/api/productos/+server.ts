@@ -7,8 +7,15 @@ import type { ProductoConsultado } from './../../../lib/types';
 export const GET: RequestHandler = async () => {
     try {
         const [rows] = await pool.query('SELECT id, nombre, cantidadEnvases FROM `Productos`');
-        const productos = rows as ProductoConsultado[];
-        console.log('productos', productos.length);
+        let productos = rows as ProductoConsultado[];
+        //se le agrega la clave tipo: 'principal' para que el front lo pueda identificar
+        productos = productos.map(producto => {
+            return {
+                ...producto,
+                tipo: 'principal'
+            }
+        });
+        //console.log('productos', productos.length);
         if (productos.length > 0) {
             return new Response(JSON.stringify(productos), {
                 headers: {

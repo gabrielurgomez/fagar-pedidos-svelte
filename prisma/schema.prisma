@@ -25,8 +25,9 @@ model detallePedido {
   id              Int     @id @default(autoincrement())
   idPedido        Int
   idProducto      Int
+  tipo            String  @db.VarChar(50)
   nombreProducto  String  @db.VarChar(300)
-  cantidadEnvases Int
+  cantidadEnvases Int?
   cantidad        Int
   valor           Int
   pedidos         pedidos @relation(fields: [idPedido], references: [id], onDelete: Cascade)

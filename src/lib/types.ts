@@ -3,3 +3,10 @@ export type ProductoConsultado = {
     nombre: string,
     cantidadEnvases: number
 }
+
+export type ProductoExternoConsultado = {
+    id: number,
+    nombre: string
+}
+
+

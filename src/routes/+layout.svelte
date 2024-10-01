@@ -11,6 +11,15 @@
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import type { clientes, sedesClientes } from '@prisma/client';
 
+	type ProductoAgregado = {
+		id: number;
+		nombre: string;
+		cantidadEnvases: number | null; //puede ser null por que los productos de tipo externo no llevan cantidadEnvases
+		cantidad: number;
+		valor: number;
+		tipo: string;
+	};
+
 	let pedido = {
 		idCliente: 0,
 		clienteSedeCiudad: '',
@@ -21,27 +30,20 @@
 		estado: 'creado',
 	};
 
-	type ProductoAgregado = {
-		id: number;
-		nombre: string;
-		cantidadEnvases: number;
-		cantidad: number;
-		valor: number;
-	};
-
 	let estadoActual = {
 		validandoUsuario: false,
 		consultandoProductos: false,
 		creandoPedido: false,
 		consultandoClientes: false,
+		consultandoProductosExternos: false,
 	};
 
 	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
 
 	let productos: ProductoConsultado[] = [];
+	let productosExternos: ProductoConsultado[] = [];
 
 	let tabActivo = 'crear pedido';
-	let mostrarModalProductos = false;
 
 	let vendedorLogueado = { id: 0, nombre: '' };
 
@@ -51,14 +53,14 @@
 	const consultarClientes = async () => {
 		estadoActual.consultandoClientes = true;
 		try {
-			console.log('Consultar clientes');
+			//console.log('Consultar clientes');
 			let rta = await fetch('/api/clientes', {
 				method: 'GET',
 				cache: 'no-cache',
 				headers: { 'Content-Type': 'application/json' },
 			});
 			clientes = await rta.json();
-			console.log('clientes', clientes);
+			//console.log('clientes', clientes);
 			estadoActual.consultandoClientes = false;
 			return clientes;
 			//productosFiltrados = productos;
@@ -93,13 +95,32 @@
 		}
 	};
 
+	const consultarProductosExternos = async () => {
+		estadoActual.consultandoProductosExternos = true;
+		try {
+			//console.log('Consultar productos externos');
+			let rta = await fetch('/api/productosExternos', {
+				method: 'GET',
+				cache: 'no-cache',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			productosExternos = await rta.json();
+			//console.log('productosExternos', productosExternos);
+			estadoActual.consultandoProductosExternos = false;
+		} catch (error) {
+			console.error('Error al consultar productos externos:', error);
+		}
+	};
+
 	let productoSeleccionado: ProductoAgregado = {
 		id: 0,
 		nombre: '',
 		cantidad: 0,
 		cantidadEnvases: 0,
 		valor: 0,
+		tipo: '',
 	};
+
 	let productosAgregados: ProductoAgregado[] = [];
 
 	const validarUsuario = async () => {
@@ -116,9 +137,7 @@
 			});
 			return;
 		}
-
 		//console.log('se validará el usuario', usuario);
-
 		estadoActual.validandoUsuario = true;
 
 		const rtaJson = await fetch(
@@ -137,6 +156,7 @@
 			//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
 			tabActivo = 'crear pedido';
 			consultarProductos();
+			consultarProductosExternos();
 			consultarClientes();
 		}
 
@@ -240,6 +260,7 @@
 	};
 
 	let nombreProductoBuscar = '';
+	let nombreProductoExternoBuscar = '';
 	/*
 	SI FUERA COMBOBOX
 	let touchedInputProductos = false;
@@ -251,6 +272,10 @@
 
 	$: productosFiltrados = productos.filter((producto) => {
 		return producto.nombre.toLowerCase().includes(nombreProductoBuscar.toLowerCase());
+	});
+
+	$: productosExternosFiltrados = productosExternos.filter((producto) => {
+		return producto.nombre.toLowerCase().includes(nombreProductoExternoBuscar.toLowerCase());
 	});
 
 	let clienteBuscar = '';
@@ -270,14 +295,17 @@
 			: clienteSeleccionado.sedesClientes;
 
 	$: mostrarModalProductos = false;
-	function handleOpenChange(estado: boolean) {
-		console.log('handleOpenChange, estado=>', estado);
-		mostrarModalProductos = estado;
-	}
+	$: mostrarModalProductosExternos = false;
 </script>
 
 <div class={`contenedorPrincipal`}>
-	<Modal open={mostrarModalProductos} onOpenChange={handleOpenChange}>
+	<!--Modal para productos del tipo principal-->
+	<Modal
+		open={mostrarModalProductos}
+		onOpenChange={() => {
+			mostrarModalProductos = true;
+		}}
+	>
 		<ModalContent>
 			<ModalHeader>Seleccione Producto</ModalHeader>
 			{#if estadoActual.consultandoProductos}
@@ -308,6 +336,7 @@
 													productoSeleccionado.id = producto.id;
 													productoSeleccionado.nombre = producto.nombre;
 													productoSeleccionado.cantidadEnvases = producto.cantidadEnvases;
+													productoSeleccionado.tipo = 'principal';
 													//mostrarModalProductos = false;
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}
@@ -334,7 +363,131 @@
 							console.log('se agregará el producto', productoSeleccionado);
 
 							const productoExiste = productosAgregados.some(
-								(producto) => producto.id === productoSeleccionado.id,
+								(producto) =>
+									producto.id === productoSeleccionado.id && producto.tipo === 'principal',
+							);
+							if (!productoExiste) {
+								if (productoSeleccionado.cantidad <= 0) {
+									Swal.fire({
+										icon: 'info',
+										title: 'Cantidad no válida',
+										text: 'La cantidad del producto debe ser mayor a 0',
+									});
+									return;
+								}
+								if (productoSeleccionado.valor <= 0) {
+									Swal.fire({
+										icon: 'info',
+										title: 'Valor no válido',
+										text: 'El valor del producto debe ser mayor a 0',
+									});
+									return;
+								}
+
+								if (!productoSeleccionado.cantidadEnvases) {
+									Swal.fire({
+										icon: 'info',
+										title: 'Cantidad de envases no válida',
+										text: 'El producto seleccionado no tiene parametrizado la cantidad de envases',
+									});
+									return;
+								}
+								productosAgregados = [...productosAgregados, productoSeleccionado];
+								console.log('productosAgregados', productosAgregados);
+								productoSeleccionado = {
+									id: 0,
+									nombre: '',
+									cantidad: 0,
+									cantidadEnvases: 0,
+									valor: 0,
+									tipo: '',
+								};
+								mostrarModalProductos = false;
+							} else {
+								Swal.fire({
+									icon: 'info',
+									title: 'Producto ya agregado',
+									text: 'El producto seleccionado ya fue agregado al pedido',
+								});
+							}
+						}}
+					>
+						Agregar al pedido
+					</Boton>
+				</div>
+			{/if}
+			<ModalFooter>
+				<Boton variante="link rojo" onClick={() => (mostrarModalProductos = false)}>Cancelar</Boton>
+			</ModalFooter>
+		</ModalContent>
+	</Modal>
+
+	<!--Modal para productos del tipo externo-->
+	<Modal
+		open={mostrarModalProductosExternos}
+		onOpenChange={() => {
+			mostrarModalProductosExternos = true;
+		}}
+	>
+		<ModalContent>
+			<ModalHeader>Seleccione Producto Externo</ModalHeader>
+			{#if estadoActual.consultandoProductosExternos}
+				<PuntosCargando />
+			{:else}
+				<div class="w-full px-4">
+					<div class="mt-4">
+						<input
+							class="input-texto mb-4 mt-4"
+							type="text"
+							placeholder="Filtrar productos"
+							bind:value={nombreProductoExternoBuscar}
+						/>
+						<div class="h-60 sm:h-96 overflow-y-auto mt-4">
+							{#if productosExternosFiltrados.length > 0}
+								<table class="w-full">
+									<thead class="sticky top-0 bg-white">
+										<tr>
+											<th class="px-4">ID</th>
+											<th class="px-4">Producto</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each productosExternosFiltrados as producto}
+											<tr
+												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200 text-slate-600`}
+												on:click={() => {
+													productoSeleccionado.id = producto.id;
+													productoSeleccionado.nombre = producto.nombre;
+													productoSeleccionado.cantidadEnvases = null; //los productos externos no llevan cantidad de envases
+													productoSeleccionado.tipo = 'externo';
+													console.log('productoSeleccionado', productoSeleccionado);
+												}}
+											>
+												<td class="px-4">{producto.id}</td>
+												<td class="px-4">{producto.nombre}</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							{:else}
+								<div class="text-center">No hay coincidencias</div>
+							{/if}
+						</div>
+					</div>
+					<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
+					<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
+
+					<label for="valor" class="input-label mt-4">Valor unit caja</label>
+					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
+					<Boton
+						variante="link verdeFagar"
+						onClick={() => {
+							console.log('se agregará el producto', productoSeleccionado);
+
+							//tiene que validarse el id pero tambien el tipo por que puede que se agregue un producto "principal" y "externo" con el mismo id
+							const productoExiste = productosAgregados.some(
+								(producto) =>
+									producto.id === productoSeleccionado.id && producto.tipo === 'externo',
 							);
 							if (!productoExiste) {
 								if (productoSeleccionado.cantidad <= 0) {
@@ -361,8 +514,9 @@
 									cantidad: 0,
 									cantidadEnvases: 0,
 									valor: 0,
+									tipo: '',
 								};
-								mostrarModalProductos = false;
+								mostrarModalProductosExternos = false;
 							} else {
 								Swal.fire({
 									icon: 'info',
@@ -507,12 +661,22 @@
 						<Boton
 							variante="link verdeFagar"
 							onClick={() => {
-								console.log('se mostrará el modal');
+								console.log('se mostrará el modal para productos principales');
 								consultarProductos();
 								mostrarModalProductos = true;
 							}}
 						>
-							Agregar producto
+							Agregar producto tipo principal
+						</Boton>
+						<Boton
+							variante="link verdeFagar"
+							onClick={() => {
+								console.log('se mostrará el modal para productos externos');
+								consultarProductosExternos();
+								mostrarModalProductosExternos = true;
+							}}
+						>
+							Agregar producto tipo externo
 						</Boton>
 						<!-- ESTO ES SI FUERA A IMPLEMENTAR LA LISTA DE PRODUCTOS A AGREGAR EN COMBOBOX Y NO EN MODAL
 							<div class="border-t my-4"></div>
@@ -593,6 +757,7 @@
 									<tr>
 										<th class="px-2 sm:px-4">ID</th>
 										<th class="px-1 sm:px-4 sm:text-center text-start">Producto</th>
+										<th class="px-1 sm:px-4 sm:text-center text-start">Tipo</th>
 										<th class="px-4 hidden sm:flex">Cantidad</th>
 										<th class="px-1 sm:hidden">Cant</th>
 										<th class="px-2 sm:px-4">Valor</th>
@@ -604,6 +769,10 @@
 										<tr>
 											<td class="px-2 sm:px-4 flex justify-center">{productoAgregado.id}</td>
 											<td class="px-1 sm:px-4 text-sm sm:text-base">{productoAgregado.nombre}</td>
+											<td class="px-1 sm:px-4 text-sm sm:text-base">
+												{productoAgregado.tipo.charAt(0).toUpperCase() +
+													productoAgregado.tipo.slice(1)}
+											</td>
 											<td class="px-1 sm:px-4 sm:text-center text-start">
 												{productoAgregado.cantidad}
 											</td>
@@ -629,7 +798,9 @@
 													type="button"
 													on:click={() => {
 														productosAgregados = productosAgregados.filter(
-															(producto) => producto.id !== productoAgregado.id,
+															(producto) =>
+																producto.id !== productoAgregado.id &&
+																producto.tipo !== productoAgregado.tipo,
 														);
 													}}
 												>
