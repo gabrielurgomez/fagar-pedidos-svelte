@@ -7,7 +7,7 @@ import { transporterSistemas } from '$lib/server/nodemailer';
 
 //recordar que estos datos de producto no estan la bd de admon2 si no en admon,
 //por eso ese type no está en prisma
-type ProductoEnPedido = { id: number; nombre: string; cantidad: number, cantidadEnvases: number, valor: number };
+type ProductoEnPedido = { id: number, nombre: string, tipo: string, cantidad: number, cantidadEnvases: number | null, valor: number };
 
 
 const prisma = new PrismaClient();
@@ -74,6 +74,16 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
+        //antes de crear el pedido primero se verifica que los los productos, aquellos que sean de tipo principal, no tengan ninguno la clave cantidadEnvases en null
+        const productosConCantidadEnvasesNull = productos.filter((p: ProductoEnPedido) => p.tipo === 'principal' && p.cantidadEnvases === null);
+        if (productosConCantidadEnvasesNull.length > 0) {
+            return new Response(JSON.stringify({ error: 'Uno o algunos de los productos de tipo principal no tienen la cantidad de envases' }), {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
 
         const nuevoPedido = await prisma.pedidos.create({
             data: {
@@ -94,6 +104,7 @@ export const POST: RequestHandler = async ({ request }) => {
                 data: {
                     idPedido: nuevoPedido.id,
                     idProducto: p.id,
+                    tipo: p.tipo,
                     nombreProducto: p.nombre,
                     cantidadEnvases: p.cantidadEnvases,
                     cantidad: p.cantidad,
