@@ -28,6 +28,7 @@
 		comentario: '',
 		idVendedor: 0,
 		estado: 'creado',
+		finalidad: '',
 	};
 
 	let estadoActual = {
@@ -201,8 +202,18 @@
 			return;
 		}
 
+		if (finalidadPedidoSeleccionado.id === 0) {
+			Swal.fire({
+				icon: 'info',
+				title: 'Finalidad no seleccionada',
+				text: 'Debe seleccionar una finalidad para el pedido',
+			});
+			return;
+		}
+
 		pedido.clienteSedeCiudad = sedeSeleccionada.ciudad;
 		pedido.clienteSedeDireccion = sedeSeleccionada.direccion;
+		pedido.finalidad = finalidadPedidoSeleccionado.nombre;
 
 		if (productosAgregados.length === 0) {
 			Swal.fire({
@@ -244,6 +255,7 @@
 				comentario: '',
 				idVendedor: 0,
 				estado: 'creado',
+				finalidad: '',
 			};
 			sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 			clienteSeleccionado = { id: 0, razonSocial: '', sedesClientes: [] };
@@ -277,6 +289,12 @@
 	$: productosExternosFiltrados = productosExternos.filter((producto) => {
 		return producto.nombre.toLowerCase().includes(nombreProductoExternoBuscar.toLowerCase());
 	});
+
+	let finalidadesPedido = [
+		{ id: 1, nombre: 'factura' },
+		{ id: 2, nombre: 'cotizacion' },
+	];
+	let finalidadPedidoSeleccionado = { id: 0, nombre: '' };
 
 	let clienteBuscar = '';
 	let touchedInputCliente = false;
@@ -658,6 +676,33 @@
 								</ComboboxContent>
 							</Combobox>
 						{/if}
+						<label for="Seleccione cliente" class="input-label">Seleccione finalidad pedido</label>
+						<Combobox
+							items={finalidadesPedido}
+							bind:touchedInputCliente
+							selected={{
+								value: finalidadPedidoSeleccionado.id,
+								label: finalidadPedidoSeleccionado.nombre.toUpperCase(),
+							}}
+						>
+							<ComboboxInput placeholder="Seleccione..." />
+							<ComboboxContent>
+								{#each finalidadesPedido as finalidadPedido (finalidadPedido.id)}
+									<ComboboxItem
+										value={finalidadPedido.nombre}
+										label={finalidadPedido.nombre.toUpperCase()}
+										on:click={() => {
+											finalidadPedidoSeleccionado = finalidadPedido;
+											console.log('finalidadPedidoSeleccionado', finalidadPedidoSeleccionado);
+										}}
+									/>
+								{:else}
+									<span class="block px-5 py-2 text-sm text-muted-foreground">
+										No results found
+									</span>
+								{/each}
+							</ComboboxContent>
+						</Combobox>
 						<Boton
 							variante="link verdeFagar"
 							onClick={() => {

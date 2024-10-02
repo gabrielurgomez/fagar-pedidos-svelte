@@ -18,7 +18,7 @@ export const POST: RequestHandler = async ({ request }) => {
         const { fechaHoraActualISO8601 } = obtenerFechaYHoraActual();
         //console.log('fechaHoraActualISO8601', fechaHoraActualISO8601);
 
-        const { idCliente, clienteSedeCiudad, clienteSedeDireccion, idVendedor, fechaEntrega, comentario, productos, nombreVendedor } = await request.json();
+        const { idCliente, clienteSedeCiudad, clienteSedeDireccion, idVendedor, fechaEntrega, finalidad, comentario, productos, nombreVendedor } = await request.json();
 
         if (!idCliente || idCliente === 0) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave idCliente' }), {
@@ -65,6 +65,15 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
+        if (!finalidad || finalidad === '') {
+            return new Response(JSON.stringify({ error: 'No se recibio la clave finalidad' }), {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
         if (productos.length === 0) {
             return new Response(JSON.stringify({ error: 'No se recibieron productos' }), {
                 status: 400,
@@ -94,6 +103,7 @@ export const POST: RequestHandler = async ({ request }) => {
                 fechaEntrega: formearFechaISO8601(fechaEntrega),
                 creado: fechaHoraActualISO8601,
                 estado: 'creado',
+                finalidad: finalidad,
                 comentario: comentario,
             }
         });
