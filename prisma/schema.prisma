@@ -42,6 +42,7 @@ model pedidos {
   clienteSedeDireccion String          @db.VarChar(100)
   idVendedor           Int
   fechaEntrega         DateTime        @db.Date
+  finalidad            String          @db.VarChar(50)
   creado               DateTime        @db.Date
   estado               String          @db.VarChar(50)
   comentario           String          @db.VarChar(100)
