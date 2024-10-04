@@ -7,9 +7,17 @@
 	import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem } from '$lib/components/Combobox';
 	import { Tarjeta, TarjetaHeader, TarjetaBody } from '$lib/components/Tarjeta';
 	import { Boton } from '$lib/components/Boton';
+	import { Tabla, CeldaHeader, Celda, Fila } from '$lib/components/Tabla';
+	import IconoGuardar from '$lib/icons/Guardar.svelte';
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
-	import type { clientes, sedesClientes } from '@prisma/client';
+	import dayjs from 'dayjs';
+	import type {
+		clientes,
+		sedesClientes,
+		pedidos as Pedidos,
+		detallePedido as DetallePedido,
+	} from '@prisma/client';
 
 	type ProductoAgregado = {
 		id: number;
@@ -19,6 +27,10 @@
 		valor: number;
 		tipo: string;
 	};
+
+	interface PedidoConDetalle extends Pedidos {
+		detallePedido: DetallePedido[];
+	}
 
 	let pedido = {
 		idCliente: 0,
@@ -37,12 +49,29 @@
 		creandoPedido: false,
 		consultandoClientes: false,
 		consultandoProductosExternos: false,
+		consultandoUltimosPedidos: false,
 	};
 
 	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
 
 	let productos: ProductoConsultado[] = [];
 	let productosExternos: ProductoConsultado[] = [];
+	let ultimosPedidos: PedidoConDetalle[] = [];
+
+	let pedidoSeleccionado: PedidoConDetalle = {
+		id: 0,
+		idVendedor: 0,
+		idCliente: 0,
+		clienteSedeCiudad: '',
+		clienteSedeDireccion: '',
+		creado: new Date(),
+		fechaEntrega: new Date(),
+		comentario: '',
+		detallePedido: [],
+		estado: '',
+		motivoRechazo: '',
+		finalidad: '',
+	};
 
 	let tabActivo = 'crear pedido';
 
@@ -65,6 +94,28 @@
 			estadoActual.consultandoClientes = false;
 			return clientes;
 			//productosFiltrados = productos;
+		} catch (error) {
+			console.error('Error al consultar clientes:', error);
+		}
+	};
+
+	const consultarUltimosPedidos = async () => {
+		estadoActual.consultandoUltimosPedidos = true;
+		try {
+			let rta = await fetch(
+				`/api/pedidos?finalidad=recientes&buscarpor=id&limiteregistros=300&ordenadopor=id&condicionordenado=desc&idvendedor=${vendedorLogueado.id}`,
+				{
+					method: 'GET',
+					cache: 'no-cache',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+			if (rta.status === 200) {
+				ultimosPedidos = await rta.json();
+				console.log('ultimosPedidos', ultimosPedidos);
+			}
+
+			estadoActual.consultandoUltimosPedidos = false;
 		} catch (error) {
 			console.error('Error al consultar clientes:', error);
 		}
@@ -377,7 +428,7 @@
 					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
 					<Boton
 						variante="link verdeFagar"
-						onClick={() => {
+						on:click={() => {
 							console.log('se agregará el producto', productoSeleccionado);
 
 							const productoExiste = productosAgregados.some(
@@ -435,7 +486,9 @@
 				</div>
 			{/if}
 			<ModalFooter>
-				<Boton variante="link rojo" onClick={() => (mostrarModalProductos = false)}>Cancelar</Boton>
+				<Boton variante="link rojo" on:click={() => (mostrarModalProductos = false)}>
+					Cancelar
+				</Boton>
 			</ModalFooter>
 		</ModalContent>
 	</Modal>
@@ -499,7 +552,7 @@
 					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
 					<Boton
 						variante="link verdeFagar"
-						onClick={() => {
+						on:click={() => {
 							console.log('se agregará el producto', productoSeleccionado);
 
 							//tiene que validarse el id pero tambien el tipo por que puede que se agregue un producto "principal" y "externo" con el mismo id
@@ -549,7 +602,9 @@
 				</div>
 			{/if}
 			<ModalFooter>
-				<Boton variante="link rojo" onClick={() => (mostrarModalProductos = false)}>Cancelar</Boton>
+				<Boton variante="link rojo" on:click={() => (mostrarModalProductosExternos = false)}>
+					Cancelar
+				</Boton>
 			</ModalFooter>
 		</ModalContent>
 	</Modal>
@@ -568,8 +623,8 @@
 					<label for="contrasena" class="input-label mt-4">Fecha expedición</label>
 					<input class="input-texto" bind:value={usuario.fechaExpedicionDocumento} type="date" />
 					<Boton
-						onClick={() => console.log('')}
-						tipo={'submit'}
+						class="mt-4"
+						tipo="submit"
 						cargando={estadoActual.validandoUsuario}
 						variante={'principal'}
 					>
@@ -582,34 +637,33 @@
 		<div>
 			<h1 class="text-2xl text-center">{vendedorLogueado.nombre}</h1>
 		</div>
-		<!--
-		POR AHORA NO HABRÁ CONTENEDOR DE TABS YA QUE SOLO NECESITAMOS QUE EL VENDEDOR CREE EL PEDIDO
-			<div class="fila-1columna mt-8">
-				<div class="contenedorTabs">
-					<div class={`tab ${tabActivo === 'crear pedido' ? 'tab-activo' : ''}`}>
-						<IconoGuardar tamano={20} />
-						<button
-							on:click={() => {
-								setTabActivo('crear pedido');
-								consultarProductos();
-							}}
-						>
-							Crear
-						</button>
-					</div>
 
+		<div class="fila-1columna mt-8">
+			<div class="contenedorTabs">
+				<div class={`tab ${tabActivo === 'crear pedido' ? 'tab-activo' : ''}`}>
+					<IconoGuardar tamano={20} />
 					<button
 						on:click={() => {
-							setTabActivo('consultar pedidos');
-							//consultarCiudades();
+							tabActivo = 'crear pedido';
+							consultarProductos();
 						}}
-						class={`tab ${tabActivo === 'consultar' ? 'tab-activo' : ''}`}
 					>
-						Consultar
+						Crear
 					</button>
 				</div>
+
+				<button
+					on:click={() => {
+						tabActivo = 'consultar ultimos pedidos';
+						consultarUltimosPedidos();
+					}}
+					class={`tab ${tabActivo === 'consultar ultimos pedidos' ? 'tab-activo' : ''}`}
+				>
+					Ultimos Pedidos
+				</button>
 			</div>
-		-->
+		</div>
+
 		{#if tabActivo === 'crear pedido'}
 			<Tarjeta>
 				<TarjetaHeader titulo={'Crear pedido'}></TarjetaHeader>
@@ -703,26 +757,28 @@
 								{/each}
 							</ComboboxContent>
 						</Combobox>
-						<Boton
-							variante="link verdeFagar"
-							onClick={() => {
-								console.log('se mostrará el modal para productos principales');
-								consultarProductos();
-								mostrarModalProductos = true;
-							}}
-						>
-							Agregar producto tipo principal
-						</Boton>
-						<Boton
-							variante="link verdeFagar"
-							onClick={() => {
-								console.log('se mostrará el modal para productos externos');
-								consultarProductosExternos();
-								mostrarModalProductosExternos = true;
-							}}
-						>
-							Agregar producto tipo externo
-						</Boton>
+						<div class="flex flex-col gap-2 items-start mt-4">
+							<Boton
+								variante="link verdeFagar"
+								on:click={() => {
+									console.log('se mostrará el modal para productos principales');
+									consultarProductos();
+									mostrarModalProductos = true;
+								}}
+							>
+								Agregar producto tipo principal
+							</Boton>
+							<Boton
+								variante="link verdeFagar"
+								on:click={() => {
+									console.log('se mostrará el modal para productos externos');
+									consultarProductosExternos();
+									mostrarModalProductosExternos = true;
+								}}
+							>
+								Agregar producto tipo externo
+							</Boton>
+						</div>
 						<!-- ESTO ES SI FUERA A IMPLEMENTAR LA LISTA DE PRODUCTOS A AGREGAR EN COMBOBOX Y NO EN MODAL
 							<div class="border-t my-4"></div>
 							<label for="Seleccione cliente">Agregue productos</label>
@@ -798,47 +854,48 @@
 						<!--tabla que muestra los productos agregados-->
 						{#if productosAgregados.length > 0}
 							<div class="mb-4 rounded-lg pt-2">
-								<table class="mb-4">
-									<tr>
-										<th class="px-2 sm:px-4">ID</th>
-										<th class="px-1 sm:px-4 sm:text-center text-start">Producto</th>
-										<th class="px-1 sm:px-4 sm:text-center text-start">Tipo</th>
-										<th class="px-4 hidden sm:flex">Cantidad</th>
-										<th class="px-1 sm:hidden">Cant</th>
-										<th class="px-2 sm:px-4">Valor</th>
-										<th class="px-2 sm:px-4">Total</th>
-										<th class="px-1 sm:px-4 hidden sm:table-cell">Quitar</th>
-									</tr>
+								<Tabla>
+									<Fila>
+										<CeldaHeader>ID</CeldaHeader>
+										<CeldaHeader>Producto</CeldaHeader>
+										<CeldaHeader>Tipo</CeldaHeader>
+										<CeldaHeader>Cant</CeldaHeader>
+										<CeldaHeader>Valor</CeldaHeader>
+										<CeldaHeader>Total</CeldaHeader>
+										<CeldaHeader>Quitar</CeldaHeader>
+									</Fila>
 
 									{#each productosAgregados as productoAgregado}
-										<tr>
-											<td class="px-2 sm:px-4 flex justify-center">{productoAgregado.id}</td>
-											<td class="px-1 sm:px-4 text-sm sm:text-base">{productoAgregado.nombre}</td>
-											<td class="px-1 sm:px-4 text-sm sm:text-base">
+										<Fila>
+											<Celda class="px-2 sm:px-4 flex justify-center">{productoAgregado.id}</Celda>
+											<Celda class="px-1 sm:px-4 text-sm sm:text-base">
+												{productoAgregado.nombre}
+											</Celda>
+											<Celda class="px-1 sm:px-4 text-sm sm:text-base">
 												{productoAgregado.tipo.charAt(0).toUpperCase() +
 													productoAgregado.tipo.slice(1)}
-											</td>
-											<td class="px-1 sm:px-4 sm:text-center text-start">
+											</Celda>
+											<Celda class="px-1 sm:px-4 sm:text-center text-start">
 												{productoAgregado.cantidad}
-											</td>
+											</Celda>
 
-											<td class="px-1 sm:px-4 sm:text-center text-start">
+											<Celda class="px-1 sm:px-4 sm:text-center text-start">
 												{new Intl.NumberFormat('es-CO', {
 													style: 'currency',
 													currency: 'COP',
 													minimumFractionDigits: 0,
 													maximumFractionDigits: 0,
 												}).format(productoAgregado.valor)}
-											</td>
-											<td class="px-1 sm:px-4 sm:text-center text-start">
+											</Celda>
+											<Celda class="px-1 sm:px-4 sm:text-center text-start">
 												{new Intl.NumberFormat('es-CO', {
 													style: 'currency',
 													currency: 'COP',
 													minimumFractionDigits: 0,
 													maximumFractionDigits: 0,
 												}).format(productoAgregado.cantidad * productoAgregado.valor)}
-											</td>
-											<td class="flex justify-center px-4 sm:px-0">
+											</Celda>
+											<Celda class="flex justify-center px-4 sm:px-0">
 												<button
 													type="button"
 													on:click={() => {
@@ -851,10 +908,10 @@
 												>
 													<Eliminar tamano={20}></Eliminar>
 												</button>
-											</td>
-										</tr>
+											</Celda>
+										</Fila>
 									{/each}
-								</table>
+								</Tabla>
 								<label for="w3review" class="mt-4">
 									Total pedido:
 									{new Intl.NumberFormat('es-CO', {
@@ -885,9 +942,7 @@
 							variante="principal"
 							tipo="submit"
 							cargando={estadoActual.creandoPedido}
-							onClick={() => {
-								console.log('se creará el pedido');
-							}}
+							class="mt-4"
 						>
 							Crear pedido
 						</Boton>
@@ -896,9 +951,188 @@
 			</Tarjeta>
 		{/if}
 
+		{#if tabActivo === 'consultar ultimos pedidos'}
+			<Tarjeta class="sm:w-full">
+				<TarjetaHeader titulo={'Mis ultimos 300 pedidos'}></TarjetaHeader>
+				<TarjetaBody>
+					{#if estadoActual.consultandoUltimosPedidos}
+						<PuntosCargando />
+					{:else if ultimosPedidos.length > 0}
+						<Tabla>
+							<Fila>
+								<CeldaHeader>ID</CeldaHeader>
+								<CeldaHeader>Estado</CeldaHeader>
+								<CeldaHeader>Fecha creado</CeldaHeader>
+								<CeldaHeader>Fecha entrega</CeldaHeader>
+								<CeldaHeader>Comentario</CeldaHeader>
+							</Fila>
+							{#each ultimosPedidos as pedido}
+								<Fila>
+									<Celda>{pedido.id}</Celda>
+
+									<Celda>
+										{#if pedido.estado === 'creado'}
+											<div class="font-bold">{pedido.estado.toUpperCase()}</div>
+										{/if}
+										{#if pedido.estado === 'aprobado'}
+											<div class="text-green-600 font-bold">{pedido.estado.toUpperCase()}</div>
+										{/if}
+										{#if pedido.estado === 'rechazado'}
+											<div class="text-red-500 font-bold">{pedido.estado.toUpperCase()}</div>
+										{/if}
+									</Celda>
+
+									<Celda>{dayjs(pedido.creado).format('DD-MMM-YYYY')}</Celda>
+									<Celda>{dayjs(pedido.fechaEntrega).format('DD-MMM-YYYY')}</Celda>
+									<Celda>{pedido.comentario}</Celda>
+									<Celda>
+										<Boton
+											variante="link verdeFagar"
+											on:click={() => {
+												pedidoSeleccionado = pedido;
+												console.log('pedidoSeleccionado', pedidoSeleccionado);
+											}}
+										>
+											Ver detalle
+										</Boton>
+									</Celda>
+								</Fila>
+							{/each}
+						</Tabla>
+					{:else}
+						<div class="text-center">No hay pedidos</div>
+					{/if}
+				</TarjetaBody>
+			</Tarjeta>
+			{#if pedidoSeleccionado.id > 0}
+				<Tarjeta class="sm:w-full">
+					<TarjetaHeader titulo={`Detalles Pedido id ID ${pedidoSeleccionado?.id}`}></TarjetaHeader>
+					<TarjetaBody>
+						<div class="flex sm:flex-row flex-col justify-start w-full">
+							<div class="flex flex-col sm:flex-row justify-between w-full gap-2">
+								<div class="border p-4 rounded-lg flex flex-col">
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Fecha creado:</div>
+										{dayjs(pedidoSeleccionado?.creado).format('DD-MMM-YYYY')}
+									</div>
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Fecha entrega:</div>
+										{dayjs(pedidoSeleccionado?.fechaEntrega).format('DD-MMM-YYYY')}
+									</div>
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Finalidad:</div>
+										{pedidoSeleccionado?.finalidad.charAt(0).toUpperCase() +
+											pedidoSeleccionado?.finalidad.slice(1)}
+									</div>
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Estado:</div>
+										{#if pedidoSeleccionado.estado === 'creado'}
+											<div class="font-bold">{pedidoSeleccionado?.estado.toUpperCase()}</div>
+										{/if}
+										{#if pedidoSeleccionado.estado === 'aprobado'}
+											<div class="text-green-600 font-bold">
+												{pedidoSeleccionado?.estado.toUpperCase()}
+											</div>
+										{/if}
+										{#if pedidoSeleccionado.estado === 'rechazado'}
+											<div class="text-red-500 font-bold">
+												{pedidoSeleccionado?.estado.toUpperCase()}
+											</div>
+										{/if}
+									</div>
+								</div>
+								<div class="border p-4 rounded-lg flex flex-col">
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Cliente:</div>
+										{clientes.find((c) => c.id === pedidoSeleccionado?.idCliente)?.nombreComercial}
+									</div>
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Sede:</div>
+										{pedidoSeleccionado?.clienteSedeDireccion}
+									</div>
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Ciudad:</div>
+										{pedidoSeleccionado?.clienteSedeCiudad}
+									</div>
+									<div class="flex sm:flex-row flex-col">
+										<div class="font-bold me-2">Celular:</div>
+										{clientes.find((cliente) => cliente.id === pedidoSeleccionado?.idCliente)
+											?.celular}
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="border py-4 rounded-lg w-full">
+							<Tabla>
+								<thead>
+									<Fila>
+										<CeldaHeader>Producto</CeldaHeader>
+										<CeldaHeader>Cantidad</CeldaHeader>
+										<CeldaHeader>Total Unds</CeldaHeader>
+										<CeldaHeader>Valor</CeldaHeader>
+										<CeldaHeader>Total</CeldaHeader>
+									</Fila>
+								</thead>
+								<tbody>
+									{#each pedidoSeleccionado.detallePedido as detalle}
+										<Fila>
+											<Celda>{productos.find((p) => detalle.idProducto === p.id)?.nombre}</Celda>
+											<Celda>{detalle.cantidad}</Celda>
+											<Celda>
+												{detalle.cantidadEnvases ? detalle.cantidad * detalle.cantidadEnvases : '-'}
+											</Celda>
+											<Celda>
+												{new Intl.NumberFormat('es-CO', {
+													style: 'currency',
+													currency: 'COP',
+													minimumFractionDigits: 0,
+													maximumFractionDigits: 0,
+												}).format(detalle.valor)}
+											</Celda>
+											<Celda>
+												{new Intl.NumberFormat('es-CO', {
+													style: 'currency',
+													currency: 'COP',
+													minimumFractionDigits: 0,
+													maximumFractionDigits: 0,
+												}).format(detalle.valor * detalle.cantidad)}
+											</Celda>
+										</Fila>
+									{/each}
+								</tbody>
+							</Tabla>
+						</div>
+						<div
+							class="flex mt-2 sm:flex-row flex-col me-2 p-4 border rounded-lg sm:justify-between w-full"
+						>
+							<div class="flex w-full sm:flex-row flex-col sm:items-center gap-2">
+								<div class="font-bold">Comentario:</div>
+								{pedidoSeleccionado.comentario ? pedidoSeleccionado.comentario : 'Ninguno'}
+							</div>
+							<div class="w-full flex sm:justify-end items-center mt-2 sm:mt-0">
+								<div class="font-bold">Total pedido:</div>
+								{new Intl.NumberFormat('es-CO', {
+									style: 'currency',
+									currency: 'COP',
+									minimumFractionDigits: 0,
+									maximumFractionDigits: 0,
+								}).format(
+									pedidoSeleccionado.detallePedido.reduce(
+										(acc, d) => acc + d.valor * d.cantidad,
+										0,
+									),
+								)}
+							</div>
+						</div>
+					</TarjetaBody>
+				</Tarjeta>
+			{/if}
+		{/if}
+
 		<Boton
-			variante={'rojo'}
-			onClick={() => {
+			class="sm:w-1/4 w-1/2"
+			variante="rojo"
+			on:click={() => {
 				vendedorLogueado = { id: 0, nombre: '' };
 				productos = [];
 				productosFiltrados = [];
