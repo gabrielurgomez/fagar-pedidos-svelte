@@ -8,7 +8,7 @@ import type { ProductoExternoConsultado } from './../../../lib/types';
 //En la base de datos de admon se encuentran en la tabla ProductosExternos
 export const GET: RequestHandler = async () => {
     try {
-        const [rows] = await pool.query('SELECT id, nombre FROM `ProductosExternos`');
+        const [rows] = await pool.query('SELECT id, nombre, existencias FROM `ProductosExternos`');
         let productosExternos = rows as ProductoExternoConsultado[];
         //se le agrega la clave tipo: 'externo' para que el front lo pueda identificar
         productosExternos = productosExternos.map(producto => {

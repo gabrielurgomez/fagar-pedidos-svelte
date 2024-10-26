@@ -7,6 +7,7 @@ export type ProductoConsultado = {
 export type ProductoExternoConsultado = {
     id: number,
     nombre: string
+    existencias: number
 }
 
 

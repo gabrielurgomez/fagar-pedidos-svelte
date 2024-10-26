@@ -2,7 +2,7 @@
 	import './styles/app.css';
 	import { logo } from '../lib/images/logo';
 	import Swal from 'sweetalert2';
-	import type { ProductoConsultado } from '../lib/types';
+	import type { ProductoConsultado, ProductoExternoConsultado } from '../lib/types';
 	import { Modal, ModalHeader, ModalContent, ModalFooter } from '$lib/components/Modal';
 	import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem } from '$lib/components/Combobox';
 	import { Tarjeta, TarjetaHeader, TarjetaBody } from '$lib/components/Tarjeta';
@@ -55,7 +55,7 @@
 	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
 
 	let productos: ProductoConsultado[] = [];
-	let productosExternos: ProductoConsultado[] = [];
+	let productosExternos: ProductoExternoConsultado[] = [];
 	let ultimosPedidos: PedidoConDetalle[] = [];
 
 	let pedidoSeleccionado: PedidoConDetalle = {
@@ -112,7 +112,7 @@
 			);
 			if (rta.status === 200) {
 				ultimosPedidos = await rta.json();
-				console.log('ultimosPedidos', ultimosPedidos);
+				//console.log('ultimosPedidos', ultimosPedidos);
 			}
 
 			estadoActual.consultandoUltimosPedidos = false;
@@ -520,6 +520,7 @@
 										<tr>
 											<th class="px-4">ID</th>
 											<th class="px-4">Producto</th>
+											<th class="px-4">Existencias</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -536,6 +537,7 @@
 											>
 												<td class="px-4">{producto.id}</td>
 												<td class="px-4">{producto.nombre}</td>
+												<td class="px-4 text-center">{producto.existencias}</td>
 											</tr>
 										{/each}
 									</tbody>
