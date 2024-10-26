@@ -1104,26 +1104,32 @@
 								</tbody>
 							</Tabla>
 						</div>
-						<div
-							class="flex mt-2 sm:flex-row flex-col me-2 p-4 border rounded-lg sm:justify-between w-full"
-						>
-							<div class="flex w-full sm:flex-row flex-col sm:items-center gap-2">
-								<div class="font-bold">Comentario:</div>
-								{pedidoSeleccionado.comentario ? pedidoSeleccionado.comentario : 'Ninguno'}
+						<div class="flex mt-2 flex-col gap-2 me-2 p-4 border rounded-lg w-full">
+							<div class="flex flex-col sm:flex-row sm:justify-between">
+								<div class="flex sm:flex-row flex-col sm:items-center sm:gap-2">
+									<div class="font-bold">Comentario:</div>
+									{pedidoSeleccionado.comentario ? pedidoSeleccionado.comentario : 'Ninguno'}
+								</div>
+								<div
+									class="w-full flex sm:flex-row flex-col sm:justify-end items-start mt-2 sm:mt-0"
+								>
+									<div class="font-bold">Total pedido:</div>
+									{new Intl.NumberFormat('es-CO', {
+										style: 'currency',
+										currency: 'COP',
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 0,
+									}).format(
+										pedidoSeleccionado.detallePedido.reduce(
+											(acc, d) => acc + d.valor * d.cantidad,
+											0,
+										),
+									)}
+								</div>
 							</div>
-							<div class="w-full flex sm:justify-end items-center mt-2 sm:mt-0">
-								<div class="font-bold">Total pedido:</div>
-								{new Intl.NumberFormat('es-CO', {
-									style: 'currency',
-									currency: 'COP',
-									minimumFractionDigits: 0,
-									maximumFractionDigits: 0,
-								}).format(
-									pedidoSeleccionado.detallePedido.reduce(
-										(acc, d) => acc + d.valor * d.cantidad,
-										0,
-									),
-								)}
+							<div class="flex sm:gap-2 flex-col sm:flex-row">
+								<div class="text-red-500 font-bold">Motivo Rechazo:</div>
+								{pedidoSeleccionado.motivoRechazo ? pedidoSeleccionado.motivoRechazo : 'Ninguno'}
 							</div>
 						</div>
 					</TarjetaBody>
