@@ -1,12 +1,12 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { pool } from './../../../mysql.config';
-import type { ProductoConsultado } from './../../../lib/types';
+import type { ProductoConsultado } from '$lib/types';
 
 
 export const GET: RequestHandler = async () => {
     try {
-        const [rows] = await pool.query('SELECT id, nombre, cantidadEnvases FROM `Productos`');
+        const [rows] = await pool.query('SELECT id, nombre, cantidadEnvases, tipoAceite FROM `Productos`');
         let productos = rows as ProductoConsultado[];
         //se le agrega la clave tipo: 'principal' para que el front lo pueda identificar
         productos = productos.map(producto => {
@@ -15,7 +15,7 @@ export const GET: RequestHandler = async () => {
                 tipo: 'principal'
             }
         });
-        //console.log('productos', productos.length);
+        //console.log('productos', productos);
         if (productos.length > 0) {
             return new Response(JSON.stringify(productos), {
                 headers: {

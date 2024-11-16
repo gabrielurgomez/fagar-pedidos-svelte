@@ -4,10 +4,11 @@ import { type RequestHandler } from '@sveltejs/kit';
 import { PrismaClient } from '@prisma/client';
 import { obtenerFechaYHoraActual, formearFechaISO8601 } from '$lib/server/fechas';
 import { transporterSistemas } from '$lib/server/nodemailer';
+import {env} from '$env/dynamic/private';
 
 //recordar que estos datos de producto no estan la bd de admon2 si no en admon,
 //por eso ese type no está en prisma
-type ProductoEnPedido = { id: number, nombre: string, tipo: string, cantidad: number, cantidadEnvases: number | null, valor: number };
+type ProductoEnPedido = { id: number, nombre: string, tipo: string, cantidad: number, cantidadEnvases: number | null, valor: number, tipoAceite: string };
 
 
 const prisma = new PrismaClient();
@@ -115,6 +116,7 @@ export const POST: RequestHandler = async ({ request }) => {
                     idPedido: nuevoPedido.id,
                     idProducto: p.id,
                     tipo: p.tipo,
+                    tipoAceite: p.tipoAceite,
                     nombreProducto: p.nombre,
                     cantidadEnvases: p.cantidadEnvases,
                     cantidad: p.cantidad,
@@ -149,7 +151,7 @@ export const POST: RequestHandler = async ({ request }) => {
         try {
             await transporterSistemas.sendMail({
                 from: "sistemas@fagarcomercial.com",
-                to: 'info@colsysnet.com',
+                to: env.EMAIL_NOTIFICACION_PEDIDO,
                 replyTo: "sistemas@fagarcomercial.com",
                 subject: `PEDIDOS - Nuevo pedido ID #${nuevoPedido.id}`,
                 html: cuerpoHtml

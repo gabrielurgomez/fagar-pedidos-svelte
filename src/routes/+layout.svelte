@@ -15,22 +15,9 @@
 	import type {
 		clientes,
 		sedesClientes,
-		pedidos as Pedidos,
-		detallePedido as DetallePedido,
 	} from '@prisma/client';
+	import type {PedidoConDetalle, ProductoAgregadoAlPedido} from '$lib/types';
 
-	type ProductoAgregado = {
-		id: number;
-		nombre: string;
-		cantidadEnvases: number | null; //puede ser null por que los productos de tipo externo no llevan cantidadEnvases
-		cantidad: number;
-		valor: number;
-		tipo: string;
-	};
-
-	interface PedidoConDetalle extends Pedidos {
-		detallePedido: DetallePedido[];
-	}
 
 	let pedido = {
 		idCliente: 0,
@@ -164,16 +151,17 @@
 		}
 	};
 
-	let productoSeleccionado: ProductoAgregado = {
+	let productoSeleccionado: ProductoAgregadoAlPedido = {
 		id: 0,
 		nombre: '',
 		cantidad: 0,
 		cantidadEnvases: 0,
 		valor: 0,
 		tipo: '',
+		tipoAceite: '',
 	};
 
-	let productosAgregados: ProductoAgregado[] = [];
+	let productosAgregados: ProductoAgregadoAlPedido[] = [];
 
 	const validarUsuario = async () => {
 		console.log('se validará el usuario', usuario);
@@ -406,6 +394,7 @@
 													productoSeleccionado.nombre = producto.nombre;
 													productoSeleccionado.cantidadEnvases = producto.cantidadEnvases;
 													productoSeleccionado.tipo = 'principal';
+													productoSeleccionado.tipoAceite = producto.tipoAceite;
 													//mostrarModalProductos = false;
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}
@@ -470,6 +459,7 @@
 									cantidadEnvases: 0,
 									valor: 0,
 									tipo: '',
+									tipoAceite: '',
 								};
 								mostrarModalProductos = false;
 							} else {
@@ -531,6 +521,7 @@
 													productoSeleccionado.id = producto.id;
 													productoSeleccionado.nombre = producto.nombre;
 													productoSeleccionado.cantidadEnvases = null; //los productos externos no llevan cantidad de envases
+													productoSeleccionado.tipoAceite = '';
 													productoSeleccionado.tipo = 'externo';
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}
@@ -588,6 +579,7 @@
 									cantidadEnvases: 0,
 									valor: 0,
 									tipo: '',
+									tipoAceite: '',
 								};
 								mostrarModalProductosExternos = false;
 							} else {
@@ -676,8 +668,6 @@
 						<label for="Seleccione cliente" class="input-label">Seleccione cliente</label>
 						<Combobox
 							items={clientesFiltrados}
-							bind:clienteBuscar
-							bind:touchedInputCliente
 							selected={{ value: clienteSeleccionado.id, label: clienteSeleccionado.razonSocial }}
 						>
 							<ComboboxInput placeholder="Seleccione..." />
@@ -709,8 +699,6 @@
 							</label>
 							<Combobox
 								items={sedesFiltrados}
-								bind:sedeBuscar
-								bind:touchedInputSedesCliente
 								selected={{ value: sedeSeleccionada.id, label: sedeSeleccionada.direccion }}
 							>
 								<ComboboxInput placeholder="Seleccione..." />
@@ -735,7 +723,6 @@
 						<label for="Seleccione cliente" class="input-label">Seleccione finalidad pedido</label>
 						<Combobox
 							items={finalidadesPedido}
-							bind:touchedInputCliente
 							selected={{
 								value: finalidadPedidoSeleccionado.id,
 								label: finalidadPedidoSeleccionado.nombre.toUpperCase(),
