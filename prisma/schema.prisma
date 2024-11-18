@@ -26,6 +26,7 @@ model detallePedido {
   idPedido        Int
   idProducto      Int
   tipo            String  @db.VarChar(50)
+  tipoAceite      String  @db.VarChar(50)
   nombreProducto  String  @db.VarChar(300)
   cantidadEnvases Int?
   cantidad        Int
