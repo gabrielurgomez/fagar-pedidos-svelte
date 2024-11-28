@@ -159,6 +159,7 @@
 		valor: 0,
 		tipo: '',
 		tipoAceite: '',
+		peso: 0
 	};
 
 	let productosAgregados: ProductoAgregadoAlPedido[] = [];
@@ -395,6 +396,7 @@
 													productoSeleccionado.cantidadEnvases = producto.cantidadEnvases;
 													productoSeleccionado.tipo = 'principal';
 													productoSeleccionado.tipoAceite = producto.tipoAceite;
+													productoSeleccionado.peso = producto.peso;
 													//mostrarModalProductos = false;
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}
@@ -460,6 +462,7 @@
 									valor: 0,
 									tipo: '',
 									tipoAceite: '',
+									peso: 0
 								};
 								mostrarModalProductos = false;
 							} else {
@@ -523,6 +526,7 @@
 													productoSeleccionado.cantidadEnvases = null; //los productos externos no llevan cantidad de envases
 													productoSeleccionado.tipoAceite = '';
 													productoSeleccionado.tipo = 'externo';
+													productoSeleccionado.peso = 0;
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}
 											>
@@ -580,6 +584,7 @@
 									valor: 0,
 									tipo: '',
 									tipoAceite: '',
+									peso: 0
 								};
 								mostrarModalProductosExternos = false;
 							} else {
