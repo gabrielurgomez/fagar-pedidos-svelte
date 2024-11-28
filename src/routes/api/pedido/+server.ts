@@ -8,7 +8,16 @@ import {env} from '$env/dynamic/private';
 
 //recordar que estos datos de producto no estan la bd de admon2 si no en admon,
 //por eso ese type no está en prisma
-type ProductoEnPedido = { id: number, nombre: string, tipo: string, cantidad: number, cantidadEnvases: number | null, valor: number, tipoAceite: string };
+type ProductoEnPedido = {
+        id: number,
+        nombre: string,
+        tipo: string,
+        cantidad: number,
+        cantidadEnvases: number | null,
+        valor: number,
+        tipoAceite: string,
+        peso: number
+    };
 
 
 const prisma = new PrismaClient();
@@ -118,6 +127,7 @@ export const POST: RequestHandler = async ({ request }) => {
                     tipo: p.tipo,
                     tipoAceite: p.tipoAceite,
                     nombreProducto: p.nombre,
+                    pesoProducto: p.peso,
                     cantidadEnvases: p.cantidadEnvases,
                     cantidad: p.cantidad,
                     valor: p.valor

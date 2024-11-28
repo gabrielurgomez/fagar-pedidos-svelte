@@ -11,6 +11,7 @@ export type ProductoConsultado = {
     nombre: string,
     cantidadEnvases: number
     tipoAceite: string
+    peso: number
 }
 
 //el producto como está agregado al pedido como tal, se omite cantidadEnvases de ProductoConsultado por que allá la BD siempre es number
