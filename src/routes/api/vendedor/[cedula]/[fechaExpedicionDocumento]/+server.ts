@@ -4,14 +4,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-//const consultarVendedorSQL = 'SELECT * FROM `vendedores` WHERE numeroDocumento = ? AND fechaExpedicionDocumento = ?';
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ params }) => {
 
     try {
-        const cedula = url.searchParams.get('cedula');
-        const fechaExpedicionDocumento = url.searchParams.get('fechaExpedicionDocumento');
+        const cedula = params.cedula;
+        const fechaExpedicionDocumento = params.fechaExpedicionDocumento;        
 
-        if (!cedula || cedula === '') {
+        if (!cedula) {
             return new Response(JSON.stringify({ message: 'No se recibio la clave cedula' }), {
                 status: 400,
                 headers: {
@@ -19,8 +18,7 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             });
         }
-
-        if (!fechaExpedicionDocumento || fechaExpedicionDocumento === '') {
+        if (!fechaExpedicionDocumento) {
             return new Response(JSON.stringify({ message: 'No se recibio la clave fechaExpedicionDocumento' }), {
                 status: 400,
                 headers: {
@@ -29,20 +27,9 @@ export const GET: RequestHandler = async ({ url }) => {
             });
         }
 
-
-        //console.log('cedula recibida', cedula)
-
-        /*const [vendedor] = await pool.query(consultarVendedorSQL, ['1098685807', '1990-04-24']);
-        console.log('vendedor', vendedor);*/
-
-        //const fechaExpedicionDocumento = new Date('1990-04-24').toISOString();
-
         const vendedor = await prisma.vendedores.findUnique({
             where: { cedula: cedula, fechaExpedicionDocumento: new Date(fechaExpedicionDocumento).toISOString() }
         })
-
-        //console.log('vendedor encontrado', vendedor);
-
         if (vendedor) {
             return new Response(JSON.stringify(vendedor), {
                 status: 200,
@@ -58,7 +45,6 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             });
         }
-
     } catch (e) {
         console.error(e);
         throw error(500, 'Internal Server Error');

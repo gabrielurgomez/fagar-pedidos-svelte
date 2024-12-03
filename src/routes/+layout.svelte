@@ -182,7 +182,7 @@
 		estadoActual.validandoUsuario = true;
 
 		const rtaJson = await fetch(
-			`api/vendedor?cedula=${usuario.numeroCedula}&fechaExpedicionDocumento=${usuario.fechaExpedicionDocumento}`,
+			`api/vendedor/${usuario.numeroCedula}/${usuario.fechaExpedicionDocumento}`,
 			{
 				method: 'GET',
 				headers: { 'Content-Type': 'application/json' },
