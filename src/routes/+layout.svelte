@@ -166,11 +166,11 @@
 
 	const validarUsuario = async () => {
 		console.log('se validará el usuario', usuario);
-		if (usuario.numeroCedula === '') {
+		if (!usuario.numeroCedula) {
 			Swal.fire({ icon: 'info', title: 'Valide datos', text: 'Debe digitar el número de cedula' });
 			return;
 		}
-		if (usuario.fechaExpedicionDocumento === '') {
+		if (!usuario.fechaExpedicionDocumento) {
 			Swal.fire({
 				icon: 'info',
 				title: 'Valide datos',
