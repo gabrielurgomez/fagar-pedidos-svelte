@@ -30,7 +30,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
         const { idCliente, clienteSedeCiudad, clienteSedeDireccion, idVendedor, fechaEntrega, finalidad, comentario, productos, nombreVendedor } = await request.json();
 
-        if (!idCliente || idCliente === 0) {
+        if (!idCliente) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave idCliente' }), {
                 status: 400,
                 headers: {
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        if (!clienteSedeCiudad || clienteSedeCiudad === '') {
+        if (!clienteSedeCiudad) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave clienteSedeCiudad' }), {
                 status: 400,
                 headers: {
@@ -48,7 +48,7 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        if (!clienteSedeDireccion || clienteSedeDireccion === '') {
+        if (!clienteSedeDireccion) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave clienteSedeDireccion' }), {
                 status: 400,
                 headers: {
@@ -57,7 +57,7 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        if (!idVendedor || idVendedor === 0) {
+        if (!idVendedor) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave idVendedor' }), {
                 status: 400,
                 headers: {
@@ -66,7 +66,7 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        if (!fechaEntrega || fechaEntrega === '') {
+        if (!fechaEntrega) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave fechaEntrega' }), {
                 status: 400,
                 headers: {
@@ -75,7 +75,7 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        if (!finalidad || finalidad === '') {
+        if (!finalidad) {
             return new Response(JSON.stringify({ error: 'No se recibio la clave finalidad' }), {
                 status: 400,
                 headers: {
@@ -104,6 +104,40 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
+        /*creandolo con una sola query, primero el pedido y luego los productos*/
+
+        const nuevoPedido = await prisma.pedidos.create({
+            data: {
+                idCliente: idCliente,
+                clienteSedeCiudad: clienteSedeCiudad,
+                clienteSedeDireccion: clienteSedeDireccion,
+                idVendedor: idVendedor,
+                fechaEntrega: formearFechaISO8601(fechaEntrega),
+                creado: fechaHoraActualISO8601,
+                estado: 'creado',
+                finalidad: finalidad,
+                comentario: comentario,
+                // Aquí se crea el detalle del pedido
+                detallePedido: {
+                    create: productos.map((p: ProductoEnPedido) => ({
+                        idProducto: p.id,
+                        tipo: p.tipo,
+                        tipoAceite: p.tipoAceite,
+                        nombreProducto: p.nombre,
+                        pesoProducto: p.peso,
+                        cantidadEnvases: p.cantidadEnvases,
+                        cantidad: p.cantidad,
+                        valor: p.valor
+                    }))
+                }
+            }
+        });
+
+
+        console.log('nuevoPedido', nuevoPedido);
+
+  
+        /*creandolo con dos queries separadas, primero el pedido y luego los productos del pedido
         const nuevoPedido = await prisma.pedidos.create({
             data: {
                 idCliente: idCliente,
@@ -136,28 +170,22 @@ export const POST: RequestHandler = async ({ request }) => {
 
             return nuevoDetallePedido;
         }));
+        */
 
 
-        if (productosGuardados.length !== productos.length) {
-            return new Response(JSON.stringify({ error: 'No se pudieron guardar todos los productos' }), {
-                status: 500,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-        }
+        if (nuevoPedido) {
 
-        //se envia correo notificando
-        let cuerpoHtml = "<b>Se notifica nuevo pedido</b><br>";
-        cuerpoHtml += `<br>`;
-        cuerpoHtml += `<b>Vendedor</b>: ${nombreVendedor}<br>`;
-        cuerpoHtml += `<b>Fecha de entrega:</b> ${fechaEntrega}<br>`;
-        cuerpoHtml += `<b>Comentario:</b> ${comentario}<br>`;
-        cuerpoHtml += `<b>Cantidad de productos:</b> ${productos.length}<br>`;
-        cuerpoHtml += `<br>`;
-        cuerpoHtml += `<div>Para mas detalles, inicie sesión en la aplicacion pedidos.fagarcomercial.com</div>`;
+                    //se envia correo notificando
+            let cuerpoHtml = "<b>Se notifica nuevo pedido</b><br>";
+            cuerpoHtml += `<br>`;
+            cuerpoHtml += `<b>Vendedor</b>: ${nombreVendedor}<br>`;
+            cuerpoHtml += `<b>Fecha de entrega:</b> ${fechaEntrega}<br>`;
+            cuerpoHtml += `<b>Comentario:</b> ${comentario}<br>`;
+            cuerpoHtml += `<b>Cantidad de productos:</b> ${productos.length}<br>`;
+            cuerpoHtml += `<br>`;
+            cuerpoHtml += `<div>Para mas detalles, inicie sesión en la aplicacion pedidos.fagarcomercial.com</div>`;
 
-        //se notifica por correo electronico a la empresa
+            //se notifica por correo electronico a la empresa
         try {
             await transporterSistemas.sendMail({
                 from: "sistemas@fagarcomercial.com",
@@ -177,12 +205,17 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        return new Response(JSON.stringify({ message: `Pedido creado con ID ${nuevoPedido.id}` }), {
+               return new Response(JSON.stringify({ message: `Pedido creado con ID ${nuevoPedido.id}` }), {
             status: 201,
             headers: {
                 'Content-Type': 'application/json'
             }
         });
+        }
+
+    
+
+ 
 
     } catch (e) {
         console.error(e);

@@ -12,12 +12,8 @@
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import dayjs from 'dayjs';
-	import type {
-		clientes,
-		sedesClientes,
-	} from '@prisma/client';
-	import type {PedidoConDetalle, ProductoAgregadoAlPedido} from '$lib/types';
-
+	import type { clientes, sedesClientes } from '@prisma/client';
+	import type { PedidoConDetalle, ProductoAgregadoAlPedido } from '$lib/types';
 
 	let pedido = {
 		idCliente: 0,
@@ -159,7 +155,7 @@
 		valor: 0,
 		tipo: '',
 		tipoAceite: '',
-		peso: 0
+		peso: 0,
 	};
 
 	let productosAgregados: ProductoAgregadoAlPedido[] = [];
@@ -190,7 +186,7 @@
 		);
 		if (rtaJson.status === 200) {
 			const infoVendedor = await rtaJson.json();
-			console.log('infoVendedor logueado', infoVendedor);
+			//console.log('infoVendedor logueado', infoVendedor);
 			vendedorLogueado.id = infoVendedor.id;
 			pedido.idVendedor = infoVendedor.id;
 			vendedorLogueado.nombre = infoVendedor.nombre;
@@ -214,7 +210,14 @@
 	const crearPedido = async () => {
 		console.clear();
 		console.log('se creará el pedido', pedido);
-		if (pedido.fechaEntrega === '') {
+
+		if (!pedido.idVendedor) {
+			alert(
+				'Favor avisar a sistemas, no se está capturando correctamente el idVendedor del usuario logueado para enviar al backend',
+			);
+			return;
+		}
+		if (!pedido.fechaEntrega) {
 			Swal.fire({
 				icon: 'info',
 				title: 'Fecha de entrega',
@@ -223,7 +226,8 @@
 			return;
 		}
 
-		if (clienteSeleccionado.id === 0) {
+		pedido.idCliente = clienteSeleccionado.id;
+		if (!pedido.idCliente) {
 			Swal.fire({
 				icon: 'info',
 				title: 'Cliente no seleccionado',
@@ -231,7 +235,6 @@
 			});
 			return;
 		}
-		pedido.idCliente = clienteSeleccionado.id;
 
 		if (sedeSeleccionada.id === 0) {
 			Swal.fire({
@@ -277,37 +280,54 @@
 				nombreVendedor: vendedorLogueado.nombre,
 			}),
 		});
-		console.log('rtaPedidoJson', rtaPedidoJson);
-		if (rtaPedidoJson.status === 201) {
-			let rta = await rtaPedidoJson.json();
-			console.log('rta', rta);
-			Swal.fire({
-				icon: 'success',
-				title: 'Creado',
-				text: rta.message,
-			});
-			productosAgregados = [];
-			pedido = {
-				idCliente: 0,
-				clienteSedeCiudad: '',
-				clienteSedeDireccion: '',
-				fechaEntrega: '',
-				comentario: '',
-				idVendedor: 0,
-				estado: 'creado',
-				finalidad: '',
-			};
-			sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
-			clienteSeleccionado = { id: 0, razonSocial: '', sedesClientes: [] };
-		} else {
-			let rtaError = await rtaPedidoJson.json();
-			Swal.fire({
-				icon: 'error',
-				title: 'Error 500 en el servidor',
-				text: rtaError,
-			});
-		}
+		//console.log('rtaPedidoJson', rtaPedidoJson);
+		switch (rtaPedidoJson.status) {
+			case 201: {
+				let rta = await rtaPedidoJson.json();
+				console.log('rta', rta);
+				Swal.fire({
+					icon: 'success',
+					title: 'Creado',
+					text: rta.message,
+				});
+				productosAgregados = [];
 
+				pedido = {
+					idCliente: 0,
+					idVendedor: vendedorLogueado.id,
+					clienteSedeCiudad: '',
+					clienteSedeDireccion: '',
+					fechaEntrega: '',
+					comentario: '',
+					estado: 'creado',
+					finalidad: '',
+				};
+
+				sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
+				clienteSeleccionado = { id: 0, razonSocial: '', sedesClientes: [] };
+				break;
+			}
+
+			case 400: {
+				let rtaError = await rtaPedidoJson.json();
+				Swal.fire({
+					icon: 'error',
+					title: 'Error 400',
+					text: rtaError.error,
+				});
+				break;
+			}
+
+			case 500: {
+				let rtaError = await rtaPedidoJson.json();
+				Swal.fire({
+					icon: 'error',
+					title: 'Error 500',
+					text: rtaError.error,
+				});
+				break;
+			}
+		}
 		estadoActual.creandoPedido = false;
 	};
 
@@ -361,7 +381,7 @@
 	<Modal
 		open={mostrarModalProductos}
 		onOpenChange={() => {
-			mostrarModalProductos = true;
+			mostrarModalProductos = !mostrarModalProductos;
 		}}
 	>
 		<ModalContent>
@@ -377,7 +397,7 @@
 							placeholder="Filtrar productos"
 							bind:value={nombreProductoBuscar}
 						/>
-						<div class="h-60 sm:h-96 overflow-y-auto mt-4">
+						<div class="mt-4 h-60 overflow-y-auto sm:h-96">
 							{#if productosFiltrados.length > 0}
 								<table class="w-full">
 									<thead class="sticky top-0 bg-white">
@@ -389,7 +409,7 @@
 									<tbody>
 										{#each productosFiltrados as producto}
 											<tr
-												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200 text-slate-600`}
+												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 text-slate-600 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200`}
 												on:click={() => {
 													productoSeleccionado.id = producto.id;
 													productoSeleccionado.nombre = producto.nombre;
@@ -412,10 +432,10 @@
 							{/if}
 						</div>
 					</div>
-					<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
+					<label for="cantidad" class="input-label mt-4">Cantidad</label>
 					<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
 
-					<label for="valor" class="input-label mt-4">Valor unit caja</label>
+					<label for="valor" class="input-label mt-4">Valor unit (caja o bidon)</label>
 					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
 					<Boton
 						variante="link verdeFagar"
@@ -462,7 +482,7 @@
 									valor: 0,
 									tipo: '',
 									tipoAceite: '',
-									peso: 0
+									peso: 0,
 								};
 								mostrarModalProductos = false;
 							} else {
@@ -490,7 +510,7 @@
 	<Modal
 		open={mostrarModalProductosExternos}
 		onOpenChange={() => {
-			mostrarModalProductosExternos = true;
+			mostrarModalProductosExternos = !mostrarModalProductosExternos;
 		}}
 	>
 		<ModalContent>
@@ -506,7 +526,7 @@
 							placeholder="Filtrar productos"
 							bind:value={nombreProductoExternoBuscar}
 						/>
-						<div class="h-60 sm:h-96 overflow-y-auto mt-4">
+						<div class="mt-4 h-60 overflow-y-auto sm:h-96">
 							{#if productosExternosFiltrados.length > 0}
 								<table class="w-full">
 									<thead class="sticky top-0 bg-white">
@@ -519,7 +539,7 @@
 									<tbody>
 										{#each productosExternosFiltrados as producto}
 											<tr
-												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200 text-slate-600`}
+												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 text-slate-600 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200`}
 												on:click={() => {
 													productoSeleccionado.id = producto.id;
 													productoSeleccionado.nombre = producto.nombre;
@@ -584,7 +604,7 @@
 									valor: 0,
 									tipo: '',
 									tipoAceite: '',
-									peso: 0
+									peso: 0,
 								};
 								mostrarModalProductosExternos = false;
 							} else {
@@ -609,7 +629,7 @@
 	</Modal>
 
 	<div class="flex flex-col items-center">
-		<img alt="logo" src={logo} class="w-40 h-25 sm:w-80 sm:h-45" />
+		<img alt="logo" src={logo} class="h-25 sm:h-45 w-40 sm:w-80" />
 	</div>
 	{#if vendedorLogueado.id === 0}
 		<Tarjeta>
@@ -634,7 +654,7 @@
 		</Tarjeta>
 	{:else}
 		<div>
-			<h1 class="text-2xl text-center">{vendedorLogueado.nombre}</h1>
+			<h1 class="text-center text-2xl">{vendedorLogueado.nombre}</h1>
 		</div>
 
 		<div class="fila-1columna mt-8">
@@ -751,11 +771,11 @@
 								{/each}
 							</ComboboxContent>
 						</Combobox>
-						<div class="flex flex-col gap-2 items-start mt-4">
+						<div class="mt-4 flex flex-col items-start gap-2">
 							<Boton
 								variante="link verdeFagar"
 								on:click={() => {
-									console.log('se mostrará el modal para productos principales');
+									//console.log('se mostrará el modal para productos principales');
 									consultarProductos();
 									mostrarModalProductos = true;
 								}}
@@ -765,7 +785,7 @@
 							<Boton
 								variante="link verdeFagar"
 								on:click={() => {
-									console.log('se mostrará el modal para productos externos');
+									//console.log('se mostrará el modal para productos externos');
 									consultarProductosExternos();
 									mostrarModalProductosExternos = true;
 								}}
@@ -861,19 +881,19 @@
 
 									{#each productosAgregados as productoAgregado}
 										<Fila>
-											<Celda class="px-2 sm:px-4 flex justify-center">{productoAgregado.id}</Celda>
-											<Celda class="px-1 sm:px-4 text-sm sm:text-base">
+											<Celda class="flex justify-center px-2 sm:px-4">{productoAgregado.id}</Celda>
+											<Celda class="px-1 text-sm sm:px-4 sm:text-base">
 												{productoAgregado.nombre}
 											</Celda>
-											<Celda class="px-1 sm:px-4 text-sm sm:text-base">
+											<Celda class="px-1 text-sm sm:px-4 sm:text-base">
 												{productoAgregado.tipo.charAt(0).toUpperCase() +
 													productoAgregado.tipo.slice(1)}
 											</Celda>
-											<Celda class="px-1 sm:px-4 sm:text-center text-start">
+											<Celda class="px-1 text-start sm:px-4 sm:text-center">
 												{productoAgregado.cantidad}
 											</Celda>
 
-											<Celda class="px-1 sm:px-4 sm:text-center text-start">
+											<Celda class="px-1 text-start sm:px-4 sm:text-center">
 												{new Intl.NumberFormat('es-CO', {
 													style: 'currency',
 													currency: 'COP',
@@ -881,7 +901,7 @@
 													maximumFractionDigits: 0,
 												}).format(productoAgregado.valor)}
 											</Celda>
-											<Celda class="px-1 sm:px-4 sm:text-center text-start">
+											<Celda class="px-1 text-start sm:px-4 sm:text-center">
 												{new Intl.NumberFormat('es-CO', {
 													style: 'currency',
 													currency: 'COP',
@@ -969,10 +989,10 @@
 											<div class="font-bold">{pedido.estado.toUpperCase()}</div>
 										{/if}
 										{#if pedido.estado === 'aprobado'}
-											<div class="text-green-600 font-bold">{pedido.estado.toUpperCase()}</div>
+											<div class="font-bold text-green-600">{pedido.estado.toUpperCase()}</div>
 										{/if}
 										{#if pedido.estado === 'rechazado'}
-											<div class="text-red-500 font-bold">{pedido.estado.toUpperCase()}</div>
+											<div class="font-bold text-red-500">{pedido.estado.toUpperCase()}</div>
 										{/if}
 									</Celda>
 
@@ -1002,61 +1022,61 @@
 				<Tarjeta class="sm:w-full">
 					<TarjetaHeader titulo={`Detalles Pedido id ID ${pedidoSeleccionado?.id}`}></TarjetaHeader>
 					<TarjetaBody>
-						<div class="flex sm:flex-row flex-col justify-start w-full">
-							<div class="flex flex-col sm:flex-row justify-between w-full gap-2">
-								<div class="border p-4 rounded-lg flex flex-col">
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Fecha creado:</div>
+						<div class="flex w-full flex-col justify-start sm:flex-row">
+							<div class="flex w-full flex-col justify-between gap-2 sm:flex-row">
+								<div class="flex flex-col rounded-lg border p-4">
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Fecha creado:</div>
 										{dayjs(pedidoSeleccionado?.creado).format('DD-MMM-YYYY')}
 									</div>
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Fecha entrega:</div>
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Fecha entrega:</div>
 										{dayjs(pedidoSeleccionado?.fechaEntrega).format('DD-MMM-YYYY')}
 									</div>
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Finalidad:</div>
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Finalidad:</div>
 										{pedidoSeleccionado?.finalidad.charAt(0).toUpperCase() +
 											pedidoSeleccionado?.finalidad.slice(1)}
 									</div>
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Estado:</div>
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Estado:</div>
 										{#if pedidoSeleccionado.estado === 'creado'}
 											<div class="font-bold">{pedidoSeleccionado?.estado.toUpperCase()}</div>
 										{/if}
 										{#if pedidoSeleccionado.estado === 'aprobado'}
-											<div class="text-green-600 font-bold">
+											<div class="font-bold text-green-600">
 												{pedidoSeleccionado?.estado.toUpperCase()}
 											</div>
 										{/if}
 										{#if pedidoSeleccionado.estado === 'rechazado'}
-											<div class="text-red-500 font-bold">
+											<div class="font-bold text-red-500">
 												{pedidoSeleccionado?.estado.toUpperCase()}
 											</div>
 										{/if}
 									</div>
 								</div>
-								<div class="border p-4 rounded-lg flex flex-col">
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Cliente:</div>
+								<div class="flex flex-col rounded-lg border p-4">
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Cliente:</div>
 										{clientes.find((c) => c.id === pedidoSeleccionado?.idCliente)?.nombreComercial}
 									</div>
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Sede:</div>
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Sede:</div>
 										{pedidoSeleccionado?.clienteSedeDireccion}
 									</div>
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Ciudad:</div>
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Ciudad:</div>
 										{pedidoSeleccionado?.clienteSedeCiudad}
 									</div>
-									<div class="flex sm:flex-row flex-col">
-										<div class="font-bold me-2">Celular:</div>
+									<div class="flex flex-col sm:flex-row">
+										<div class="me-2 font-bold">Celular:</div>
 										{clientes.find((cliente) => cliente.id === pedidoSeleccionado?.idCliente)
 											?.celular}
 									</div>
 								</div>
 							</div>
 						</div>
-						<div class="border py-4 rounded-lg w-full">
+						<div class="w-full rounded-lg border py-4">
 							<Tabla>
 								<thead>
 									<Fila>
@@ -1096,14 +1116,14 @@
 								</tbody>
 							</Tabla>
 						</div>
-						<div class="flex mt-2 flex-col gap-2 me-2 p-4 border rounded-lg w-full">
+						<div class="me-2 mt-2 flex w-full flex-col gap-2 rounded-lg border p-4">
 							<div class="flex flex-col sm:flex-row sm:justify-between">
-								<div class="flex sm:flex-row flex-col sm:items-center sm:gap-2">
+								<div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
 									<div class="font-bold">Comentario:</div>
 									{pedidoSeleccionado.comentario ? pedidoSeleccionado.comentario : 'Ninguno'}
 								</div>
 								<div
-									class="w-full flex sm:flex-row flex-col sm:justify-end items-start mt-2 sm:mt-0"
+									class="mt-2 flex w-full flex-col items-start sm:mt-0 sm:flex-row sm:justify-end"
 								>
 									<div class="font-bold">Total pedido:</div>
 									{new Intl.NumberFormat('es-CO', {
@@ -1119,8 +1139,8 @@
 									)}
 								</div>
 							</div>
-							<div class="flex sm:gap-2 flex-col sm:flex-row">
-								<div class="text-red-500 font-bold">Motivo Rechazo:</div>
+							<div class="flex flex-col sm:flex-row sm:gap-2">
+								<div class="font-bold text-red-500">Motivo Rechazo:</div>
 								{pedidoSeleccionado.motivoRechazo ? pedidoSeleccionado.motivoRechazo : 'Ninguno'}
 							</div>
 						</div>
@@ -1130,7 +1150,7 @@
 		{/if}
 
 		<Boton
-			class="sm:w-1/4 w-1/2"
+			class="w-1/2 sm:w-1/4"
 			variante="rojo"
 			on:click={() => {
 				vendedorLogueado = { id: 0, nombre: '' };

@@ -79,3 +79,20 @@ model sedesClientes {
 
   @@index([idCliente], map: "sedesClientes_idCliente_fkey")
 }
+
+model cargues {
+  id            Int             @id @default(autoincrement())
+  fecha         DateTime        @db.Date
+  fechaCreado   DateTime        @db.Date
+  observaciones String          @db.VarChar(500)
+  detalleCargue detalleCargue[]
+}
+
+model detalleCargue {
+  id       Int     @id @default(autoincrement())
+  idCargue Int
+  idPedido Int
+  cargues  cargues @relation(fields: [idCargue], references: [id])
+
+  @@index([idCargue], map: "detalleCargue_idCargue_fkey")
+}

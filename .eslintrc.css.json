@@ -1,0 +1,11 @@
+{
+	"extends": ["./.eslintrc.jcs", "plugin:tailwindcss/recommended"],
+	"rules": {
+		"tailwindcss/no-custom-classname": [
+			"warn",
+			{
+				"config": "tailwind.config.cjs"
+			}
+		]
+	}
+}
