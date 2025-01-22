@@ -142,21 +142,21 @@
 	const consultarProductosExternos = async () => {
 		estadoActual.consultandoProductosExternos = true;
 		try {
-			//console.log('Consultar productos externos');
+			console.log('Consultar productos externos');
 			let rta = await fetch('/api/productosExternos', {
 				method: 'GET',
 				cache: 'no-cache',
 				headers: { 'Content-Type': 'application/json' },
 			});
 			productosExternos = await rta.json();
-			//console.log('productosExternos', productosExternos);
+			console.log('productosExternos', productosExternos);
 			estadoActual.consultandoProductosExternos = false;
 		} catch (error) {
 			console.error('Error al consultar productos externos:', error);
 		}
 	};
 
-	let productoSeleccionado: ProductoAgregadoAlPedido = {
+	let productoSeleccionadoDefecto = {
 		id: 0,
 		nombre: '',
 		cantidad: 0,
@@ -166,6 +166,8 @@
 		tipoAceite: '',
 		peso: 0,
 	};
+
+	let productoSeleccionado: ProductoAgregadoAlPedido = productoSeleccionadoDefecto;
 
 	let productosAgregados: ProductoAgregadoAlPedido[] = [];
 
@@ -312,7 +314,6 @@
 					text: rta.message,
 				});
 				productosAgregados = [];
-
 				pedido = {
 					idCliente: 0,
 					idVendedor: vendedorLogueado.id,
@@ -326,6 +327,7 @@
 
 				sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 				clienteSeleccionado = { id: 0, razonSocial: '', sedesClientes: [] };
+				productoSeleccionado = productoSeleccionadoDefecto;
 				break;
 			}
 
@@ -565,9 +567,9 @@
 													productoSeleccionado.id = producto.id;
 													productoSeleccionado.nombre = producto.nombre;
 													productoSeleccionado.cantidadEnvases = null; //los productos externos no llevan cantidad de envases
-													productoSeleccionado.tipoAceite = '';
+													productoSeleccionado.tipoAceite = null;
 													productoSeleccionado.tipo = 'externo';
-													productoSeleccionado.peso = 0;
+													productoSeleccionado.peso = producto.peso;
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}
 											>

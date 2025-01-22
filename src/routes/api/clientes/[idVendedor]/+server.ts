@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			});
 		}
 
-		console.log('idVendedor', idVendedor);
+		//console.log('idVendedor', idVendedor);
 
 		const clientes = await prisma.clientes.findMany({
 			include: {
@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			},
 		});
 
-		console.log(`Clientes del vendedor de ID ${idVendedor}`, clientes);
+		//console.log(`Clientes del vendedor de ID ${idVendedor}`, clientes);
 
 		await prisma.$disconnect();
 		if (clientes.length > 0) {

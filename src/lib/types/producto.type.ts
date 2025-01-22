@@ -3,7 +3,7 @@ export type ProductoConsultado = {
 	id: number;
 	nombre: string;
 	cantidadEnvases: number;
-	tipoAceite: string;
+	tipoAceite: string | null; //puede ser null por que los productos de tipo externo no llevan peso
 	peso: number;
 };
 
@@ -19,5 +19,6 @@ export type ProductoAgregadoAlPedido = Omit<ProductoConsultado, 'cantidadEnvases
 export type ProductoExternoConsultado = {
 	id: number;
 	nombre: string;
+	peso: number;
 	existencias: number;
 };
