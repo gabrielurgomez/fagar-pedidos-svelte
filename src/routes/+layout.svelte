@@ -2,7 +2,6 @@
 	import './styles/app.css';
 	import { logo } from '../lib/images/logo';
 	import Swal from 'sweetalert2';
-	import type { ProductoConsultado, ProductoExternoConsultado } from '../lib/types';
 	import { Modal, ModalHeader, ModalContent, ModalFooter } from '$lib/components/Modal';
 	import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem } from '$lib/components/Combobox';
 	import { Tarjeta, TarjetaHeader, TarjetaBody } from '$lib/components/Tarjeta';
@@ -12,8 +11,19 @@
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import dayjs from 'dayjs';
-	import type { clientes, sedesClientes } from '@prisma/client';
-	import type { PedidoConDetalle, ProductoAgregadoAlPedido } from '$lib/types';
+	import type { ClienteSede, Cliente } from '$lib/types/cliente.type';
+	import type { PedidoConDetalle } from '$lib/types/pedido.type';
+	import type {
+		ProductoAgregadoAlPedido,
+		ProductoExternoConsultado,
+		ProductoConsultado,
+	} from '$lib/types/producto.type';
+
+	enum Tabs {
+		ninguno,
+		crearPedido,
+		consultarUltimosPedidos,
+	}
 
 	let pedido = {
 		idCliente: 0,
@@ -56,26 +66,25 @@
 		finalidad: '',
 	};
 
-	let tabActivo = 'crear pedido';
+	let tabActivo: Tabs = Tabs.crearPedido;
 
-	let vendedorLogueado = { id: 0, nombre: '' };
+	let vendedorLogueado: { id: number; nombre: string } = { id: 0, nombre: '' };
 
-	type ClienteConSedes = clientes & { sedesClientes: sedesClientes[] };
-	let clientes: ClienteConSedes[] = [];
+	let clientes: Cliente[] = [];
 
-	const consultarClientes = async () => {
+	const consultarClientesDelVendedor = async (idVendedor: number) => {
 		estadoActual.consultandoClientes = true;
 		try {
 			//console.log('Consultar clientes');
-			let rta = await fetch('/api/clientes', {
+			let rta = await fetch(`/api/clientes/${idVendedor}`, {
 				method: 'GET',
 				cache: 'no-cache',
 				headers: { 'Content-Type': 'application/json' },
 			});
-			clientes = await rta.json();
+			let clientesEncontrados = await rta.json();
 			//console.log('clientes', clientes);
 			estadoActual.consultandoClientes = false;
-			return clientes;
+			return clientesEncontrados;
 			//productosFiltrados = productos;
 		} catch (error) {
 			console.error('Error al consultar clientes:', error);
@@ -107,7 +116,7 @@
 	let clienteSeleccionado = {
 		id: 0,
 		razonSocial: '',
-		sedesClientes: [] as sedesClientes[],
+		sedesClientes: [] as ClienteSede[],
 	};
 	let sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 
@@ -184,24 +193,36 @@
 				headers: { 'Content-Type': 'application/json' },
 			},
 		);
+
 		if (rtaJson.status === 200) {
 			const infoVendedor = await rtaJson.json();
-			//console.log('infoVendedor logueado', infoVendedor);
-			vendedorLogueado.id = infoVendedor.id;
-			pedido.idVendedor = infoVendedor.id;
-			vendedorLogueado.nombre = infoVendedor.nombre;
-			//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
-			tabActivo = 'crear pedido';
-			consultarProductos();
-			consultarProductosExternos();
-			consultarClientes();
-		}
 
+			let clientesEncontrados = await consultarClientesDelVendedor(infoVendedor.id);
+			if (clientesEncontrados.length > 0) {
+				clientes = clientesEncontrados;
+
+				//console.log('infoVendedor logueado', infoVendedor);
+				vendedorLogueado.id = infoVendedor.id;
+				pedido.idVendedor = infoVendedor.id;
+				vendedorLogueado.nombre = infoVendedor.nombre;
+
+				//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
+				tabActivo = Tabs.crearPedido;
+				consultarProductos();
+				consultarProductosExternos();
+			} else {
+				Swal.fire({
+					icon: 'info',
+					title: 'Clientes no encontrados',
+					text: `Los datos de inicio de sesión son válidos, pero el usuario de cedula ${usuario.numeroCedula} que acaba de digitar no tiene clientes asignados, favor solicite que le asignen clientes`,
+				});
+			}
+		}
 		if (rtaJson.status === 404) {
 			Swal.fire({
 				icon: 'info',
 				title: 'Usuario no encontrado',
-				text: 'El usuario no se encuentra registrado en la base de datos',
+				text: `El usuario de cedula ${usuario.numeroCedula} con fecha de expedición ${usuario.fechaExpedicionDocumento} no se encuentra registrado en la base de datos`,
 			});
 		}
 		estadoActual.validandoUsuario = false;
@@ -284,7 +305,7 @@
 		switch (rtaPedidoJson.status) {
 			case 201: {
 				let rta = await rtaPedidoJson.json();
-				console.log('rta', rta);
+				//console.log('rta', rta);
 				Swal.fire({
 					icon: 'success',
 					title: 'Creado',
@@ -659,11 +680,11 @@
 
 		<div class="fila-1columna mt-8">
 			<div class="contenedorTabs">
-				<div class={`tab ${tabActivo === 'crear pedido' ? 'tab-activo' : ''}`}>
+				<div class={`tab ${tabActivo === Tabs.crearPedido ? 'tab-activo' : ''}`}>
 					<IconoGuardar tamano={20} />
 					<button
 						on:click={() => {
-							tabActivo = 'crear pedido';
+							tabActivo = Tabs.crearPedido;
 							consultarProductos();
 						}}
 					>
@@ -673,17 +694,17 @@
 
 				<button
 					on:click={() => {
-						tabActivo = 'consultar ultimos pedidos';
+						tabActivo = Tabs.consultarUltimosPedidos;
 						consultarUltimosPedidos();
 					}}
-					class={`tab ${tabActivo === 'consultar ultimos pedidos' ? 'tab-activo' : ''}`}
+					class={`tab ${tabActivo === Tabs.consultarUltimosPedidos ? 'tab-activo' : ''}`}
 				>
 					Ultimos Pedidos
 				</button>
 			</div>
 		</div>
 
-		{#if tabActivo === 'crear pedido'}
+		{#if tabActivo === Tabs.crearPedido}
 			<Tarjeta>
 				<TarjetaHeader titulo={'Crear pedido'}></TarjetaHeader>
 				<TarjetaBody>
@@ -706,7 +727,7 @@
 											clienteSeleccionado = {
 												id: cliente.id,
 												razonSocial: cliente.razonSocial,
-												sedesClientes: cliente.sedesClientes,
+												sedesClientes: cliente.sedes,
 											};
 											console.log('clienteSeleccionado', clienteSeleccionado);
 										}}
@@ -965,7 +986,7 @@
 			</Tarjeta>
 		{/if}
 
-		{#if tabActivo === 'consultar ultimos pedidos'}
+		{#if tabActivo === Tabs.consultarUltimosPedidos}
 			<Tarjeta class="sm:w-full">
 				<TarjetaHeader titulo={'Mis ultimos 300 pedidos'}></TarjetaHeader>
 				<TarjetaBody>
@@ -1156,7 +1177,7 @@
 				vendedorLogueado = { id: 0, nombre: '' };
 				productos = [];
 				productosFiltrados = [];
-				tabActivo = '';
+				tabActivo = Tabs.ninguno;
 			}}
 		>
 			Cerrar sesión
