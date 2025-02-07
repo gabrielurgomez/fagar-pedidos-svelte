@@ -139,7 +139,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				idVendedor: idVendedor,
 				fechaEntrega: formearFechaISO8601(fechaEntrega),
 				creado: fechaHoraActualISO8601,
-				estado: 'creado',
+				estado: 'CREADO',
 				finalidad: finalidad,
 				comentario: comentario,
 				// Aquí se crea el detalle del pedido
