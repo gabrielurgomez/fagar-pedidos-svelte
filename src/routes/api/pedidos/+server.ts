@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { error } from '@sveltejs/kit';
 import { type RequestHandler } from '@sveltejs/kit';
 import { json } from '@sveltejs/kit';
-
+import { formatearFechaISO8601aYYYYMMDD } from '$lib/utils/fechas';
 import type { PedidoConDetalle } from '$lib/types';
 
 const prisma = new PrismaClient();
@@ -77,7 +77,17 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 
 		if (pedidos.length > 0) {
-			return new Response(JSON.stringify(pedidos), {
+			let pedidosFechasFormateadas = pedidos.map((p: PedidoConDetalle) => {
+				return {
+					...p,
+					fechaEntrega: formatearFechaISO8601aYYYYMMDD(p.fechaEntrega),
+					creado: formatearFechaISO8601aYYYYMMDD(p.creado),
+				};
+			});
+
+			console.log('pedidosFechasFormateadas', pedidosFechasFormateadas);
+
+			return new Response(JSON.stringify(pedidosFechasFormateadas), {
 				status: 200,
 				headers: { 'Content-Type': 'application/json' },
 			});
