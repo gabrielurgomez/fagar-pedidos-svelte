@@ -18,6 +18,7 @@
 		ProductoExternoConsultado,
 		ProductoConsultado,
 	} from '$lib/types/producto.type';
+	import { EstadosPedido, LIMITEULTIMOSPEDIDOS } from '$lib/constants/pedido.constant';
 
 	enum Tabs {
 		ninguno,
@@ -95,7 +96,7 @@
 		estadoActual.consultandoUltimosPedidos = true;
 		try {
 			let rta = await fetch(
-				`/api/pedidos?finalidad=recientes&buscarpor=id&limiteregistros=300&ordenadopor=id&condicionordenado=desc&idvendedor=${vendedorLogueado.id}`,
+				`/api/pedidos?finalidad=recientes&buscarpor=id&limiteregistros=${LIMITEULTIMOSPEDIDOS}&ordenadopor=id&condicionordenado=desc&idvendedor=${vendedorLogueado.id}`,
 				{
 					method: 'GET',
 					cache: 'no-cache',
@@ -990,7 +991,7 @@
 
 		{#if tabActivo === Tabs.consultarUltimosPedidos}
 			<Tarjeta class="sm:w-full">
-				<TarjetaHeader titulo={'Mis ultimos 300 pedidos'}></TarjetaHeader>
+				<TarjetaHeader titulo={`Mis ultimos ${LIMITEULTIMOSPEDIDOS} pedidos`}></TarjetaHeader>
 				<TarjetaBody>
 					{#if estadoActual.consultandoUltimosPedidos}
 						<PuntosCargando />
@@ -1008,14 +1009,14 @@
 									<Celda>{pedido.id}</Celda>
 
 									<Celda>
-										{#if pedido.estado === 'creado'}
-											<div class="font-bold">{pedido.estado.toUpperCase()}</div>
+										{#if pedido.estado === EstadosPedido.creado || pedido.estado === EstadosPedido.pendiente}
+											<div class="font-bold">{EstadosPedido.creado}</div>
 										{/if}
-										{#if pedido.estado === 'aprobado'}
-											<div class="font-bold text-green-600">{pedido.estado.toUpperCase()}</div>
+										{#if pedido.estado === EstadosPedido.aprobado}
+											<div class="font-bold text-green-600">{EstadosPedido.aprobado}</div>
 										{/if}
-										{#if pedido.estado === 'rechazado'}
-											<div class="font-bold text-red-500">{pedido.estado.toUpperCase()}</div>
+										{#if pedido.estado === EstadosPedido.rechazado}
+											<div class="font-bold text-red-500">{EstadosPedido.rechazado}</div>
 										{/if}
 									</Celda>
 
@@ -1027,7 +1028,7 @@
 											variante="link verdeFagar"
 											on:click={() => {
 												pedidoSeleccionado = pedido;
-												console.log('pedidoSeleccionado', pedidoSeleccionado);
+												//console.log('pedidoSeleccionado', pedidoSeleccionado);
 											}}
 										>
 											Ver detalle
@@ -1063,17 +1064,17 @@
 									</div>
 									<div class="flex flex-col sm:flex-row">
 										<div class="me-2 font-bold">Estado:</div>
-										{#if pedidoSeleccionado.estado === 'creado'}
-											<div class="font-bold">{pedidoSeleccionado?.estado.toUpperCase()}</div>
+										{#if pedidoSeleccionado.estado === EstadosPedido.creado || pedidoSeleccionado.estado === EstadosPedido.pendiente}
+											<div class="font-bold">{EstadosPedido.creado}</div>
 										{/if}
-										{#if pedidoSeleccionado.estado === 'aprobado'}
+										{#if pedidoSeleccionado.estado === EstadosPedido.aprobado}
 											<div class="font-bold text-green-600">
-												{pedidoSeleccionado?.estado.toUpperCase()}
+												{EstadosPedido.aprobado}
 											</div>
 										{/if}
-										{#if pedidoSeleccionado.estado === 'rechazado'}
+										{#if pedidoSeleccionado.estado === EstadosPedido.rechazado}
 											<div class="font-bold text-red-500">
-												{pedidoSeleccionado?.estado.toUpperCase()}
+												{EstadosPedido.rechazado}
 											</div>
 										{/if}
 									</div>
