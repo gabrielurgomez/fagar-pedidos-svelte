@@ -1,23 +1,10 @@
 //import { error } from '@sveltejs/kit';
 import { type RequestHandler } from '@sveltejs/kit';
-
 import { PrismaClient } from '@prisma/client';
 import { obtenerFechaYHoraActual, formearFechaISO8601 } from '$lib/server/fechas';
 import { transporterSistemas } from '$lib/server/nodemailer';
 import { env } from '$env/dynamic/private';
-
-//recordar que estos datos de producto no estan la bd de admon2 si no en admon,
-//por eso ese type no está en prisma
-type ProductoEnPedido = {
-	id: number;
-	nombre: string;
-	tipo: string;
-	cantidad: number;
-	cantidadEnvases: number | null;
-	valor: number;
-	tipoAceite: string;
-	peso: number;
-};
+import type { ProductoEnPedido } from '$lib/types/producto.type';
 
 const prisma = new PrismaClient();
 
@@ -105,7 +92,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		//valido que a ningun producto le falte la cantidad, o que si el producto es distinto de tipo externo tenga el tipoAceite
-		productos.forEach((p) => {
+		productos.forEach((p: ProductoEnPedido) => {
 			if (!p.cantidad) {
 				return new Response(
 					JSON.stringify({ error: 'Uno de los productos no tienen la cantidad' }),
@@ -142,6 +129,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				estado: 'CREADO',
 				finalidad: finalidad,
 				comentario: comentario,
+				idPedidoPendiente: null, //un pedido recien creado no tiene un pedido pendiente derivado de el
 				// Aquí se crea el detalle del pedido
 				detallePedido: {
 					create: productos.map((p: ProductoEnPedido) => ({
@@ -233,6 +221,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
 			return new Response(JSON.stringify({ message: `Pedido creado con ID ${nuevoPedido.id}` }), {
 				status: 201,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		} else {
+			return new Response(JSON.stringify({ error: 'No se pudo crear el pedido' }), {
+				status: 500,
 				headers: {
 					'Content-Type': 'application/json',
 				},

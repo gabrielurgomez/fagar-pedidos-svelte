@@ -16,6 +16,19 @@ export type ProductoAgregadoAlPedido = Omit<ProductoConsultado, 'cantidadEnvases
 	tipo: string;
 };
 
+//recordar que estos datos de producto no estan la bd de admon2 si no en admon,
+//por eso ese type no está en prisma
+export type ProductoEnPedido = {
+	id: number;
+	nombre: string;
+	tipo: string;
+	cantidad: number;
+	cantidadEnvases: number | null;
+	valor: number;
+	tipoAceite: string;
+	peso: number;
+};
+
 export type ProductoExternoConsultado = {
 	id: number;
 	nombre: string;
