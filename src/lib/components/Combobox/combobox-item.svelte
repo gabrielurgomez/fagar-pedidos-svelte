@@ -14,21 +14,20 @@
 	{value}
 	{label}
 	class={cn(
-		`flex
-        gap-2
-        items-center
-        justify-between        
+		`rounded-button
+        flex
         cursor-pointer
-        hover:bg-gray-100
-        hover:rounded-lg
-        rounded-button
-        px-3
-        py-1
-        text-sm
-        data-[highlighted]:bg-gray-100
+        items-center        
+        justify-between
+        gap-2
         overflow-hidden
         truncate
-        text-ellipsis`,
+        text-ellipsis
+		p-3
+        text-sm
+        hover:rounded-lg
+        hover:bg-gray-100
+        data-[highlighted]:bg-gray-100`,
 		customClasses,
 	)}
 	on:click
