@@ -81,11 +81,11 @@ export const GET: RequestHandler = async ({ url }) => {
 				return {
 					...p,
 					fechaEntrega: formatearFechaISO8601aYYYYMMDD(p.fechaEntrega),
-					creado: formatearFechaISO8601aYYYYMMDD(p.creado),
+					fechaCreado: formatearFechaISO8601aYYYYMMDD(p.fechaCreado),
 				};
 			});
 
-			console.log('pedidosFechasFormateadas', pedidosFechasFormateadas);
+			//console.log('pedidosFechasFormateadas', pedidosFechasFormateadas);
 
 			return new Response(JSON.stringify(pedidosFechasFormateadas), {
 				status: 200,

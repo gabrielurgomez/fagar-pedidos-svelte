@@ -10,15 +10,15 @@
 	import IconoGuardar from '$lib/icons/Guardar.svelte';
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
-	import dayjs from 'dayjs';
 	import type { ClienteSede, Cliente } from '$lib/types/cliente.type';
-	import type { PedidoConDetalle } from '$lib/types/pedido.type';
+	import type { PedidoConDetalleFormulario } from '$lib/types/pedido.type';
 	import type {
 		ProductoAgregadoAlPedido,
 		ProductoExternoConsultado,
 		ProductoConsultado,
 	} from '$lib/types/producto.type';
 	import { EstadosPedido, LIMITEULTIMOSPEDIDOS } from '$lib/constants/pedido.constant';
+	import { formatearFechaDDMMMYYYY } from '$lib/utils/fechas';
 
 	enum Tabs {
 		ninguno,
@@ -33,7 +33,7 @@
 		fechaEntrega: '',
 		comentario: '',
 		idVendedor: 0,
-		estado: 'creado',
+		estado: EstadosPedido.creado,
 		finalidad: '',
 	};
 
@@ -50,16 +50,16 @@
 
 	let productos: ProductoConsultado[] = [];
 	let productosExternos: ProductoExternoConsultado[] = [];
-	let ultimosPedidos: PedidoConDetalle[] = [];
+	let ultimosPedidos: PedidoConDetalleFormulario[] = [];
 
-	let pedidoSeleccionado: PedidoConDetalle = {
+	let pedidoSeleccionado: PedidoConDetalleFormulario = {
 		id: 0,
 		idVendedor: 0,
 		idCliente: 0,
 		clienteSedeCiudad: '',
 		clienteSedeDireccion: '',
-		creado: new Date(),
-		fechaEntrega: new Date(),
+		fechaCreado: null,
+		fechaEntrega: null,
 		comentario: '',
 		detallePedido: [],
 		estado: '',
@@ -322,7 +322,7 @@
 					clienteSedeDireccion: '',
 					fechaEntrega: '',
 					comentario: '',
-					estado: 'creado',
+					estado: EstadosPedido.creado,
 					finalidad: '',
 				};
 
@@ -1020,8 +1020,8 @@
 										{/if}
 									</Celda>
 
-									<Celda>{dayjs(pedido.creado).format('DD-MMM-YYYY')}</Celda>
-									<Celda>{dayjs(pedido.fechaEntrega).format('DD-MMM-YYYY')}</Celda>
+									<Celda>{formatearFechaDDMMMYYYY(pedido.fechaCreado)}</Celda>
+									<Celda>{formatearFechaDDMMMYYYY(pedido.fechaEntrega)}</Celda>
 									<Celda>{pedido.comentario}</Celda>
 									<Celda>
 										<Boton
@@ -1051,11 +1051,11 @@
 								<div class="flex flex-col rounded-lg border p-4">
 									<div class="flex flex-col sm:flex-row">
 										<div class="me-2 font-bold">Fecha creado:</div>
-										{dayjs(pedidoSeleccionado?.creado).format('DD-MMM-YYYY')}
+										{formatearFechaDDMMMYYYY(pedidoSeleccionado?.fechaCreado)}
 									</div>
 									<div class="flex flex-col sm:flex-row">
 										<div class="me-2 font-bold">Fecha entrega:</div>
-										{dayjs(pedidoSeleccionado?.fechaEntrega).format('DD-MMM-YYYY')}
+										{formatearFechaDDMMMYYYY(pedidoSeleccionado?.fechaEntrega)}
 									</div>
 									<div class="flex flex-col sm:flex-row">
 										<div class="me-2 font-bold">Finalidad:</div>

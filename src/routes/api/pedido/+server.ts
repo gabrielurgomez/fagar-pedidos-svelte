@@ -1,16 +1,18 @@
 //import { error } from '@sveltejs/kit';
 import { type RequestHandler } from '@sveltejs/kit';
 import { PrismaClient } from '@prisma/client';
-import { obtenerFechaYHoraActual, formearFechaISO8601 } from '$lib/server/fechas';
+import { obtenerFechaYHoraActual, formetearFechaToISO8601 } from '$lib/utils/fechas';
 import { transporterSistemas } from '$lib/server/nodemailer';
 import { env } from '$env/dynamic/private';
 import type { ProductoEnPedido } from '$lib/types/producto.type';
+import { EstadosPedido } from '$lib/constants/pedido.constant';
 
 const prisma = new PrismaClient();
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const { fechaHoraActualISO8601 } = obtenerFechaYHoraActual();
+		const { timeStampActual_UTCMinus5_ObjJS, fechaHoraActualISO8601_UTC } =
+			obtenerFechaYHoraActual();
 		//console.log('fechaHoraActualISO8601', fechaHoraActualISO8601);
 
 		const {
@@ -72,6 +74,8 @@ export const POST: RequestHandler = async ({ request }) => {
 				},
 			});
 		}
+		console.log('typeof fechaEntrega', typeof fechaEntrega);
+		console.log('fechaEntrega', fechaEntrega);
 
 		if (!finalidad) {
 			return new Response(JSON.stringify({ error: 'No se recibio la clave finalidad' }), {
@@ -124,13 +128,12 @@ export const POST: RequestHandler = async ({ request }) => {
 				clienteSedeCiudad: clienteSedeCiudad,
 				clienteSedeDireccion: clienteSedeDireccion,
 				idVendedor: idVendedor,
-				fechaEntrega: formearFechaISO8601(fechaEntrega),
-				creado: fechaHoraActualISO8601,
-				estado: 'CREADO',
+				fechaEntrega: formetearFechaToISO8601(fechaEntrega),
+				fechaCreado: timeStampActual_UTCMinus5_ObjJS,
+				estado: EstadosPedido.creado,
 				finalidad: finalidad,
 				comentario: comentario,
 				idPedidoPendiente: null, //un pedido recien creado no tiene un pedido pendiente derivado de el
-				// Aquí se crea el detalle del pedido
 				detallePedido: {
 					create: productos.map((p: ProductoEnPedido) => ({
 						idProducto: p.id,
@@ -143,45 +146,11 @@ export const POST: RequestHandler = async ({ request }) => {
 						valor: p.valor,
 					})),
 				},
+				creado: fechaHoraActualISO8601_UTC,
 			},
 		});
 
 		console.log('nuevoPedido', nuevoPedido);
-
-		/*creandolo con dos queries separadas, primero el pedido y luego los productos del pedido
-        const nuevoPedido = await prisma.pedidos.create({
-            data: {
-                idCliente: idCliente,
-                clienteSedeCiudad: clienteSedeCiudad,
-                clienteSedeDireccion: clienteSedeDireccion,
-                idVendedor: idVendedor,
-                fechaEntrega: formearFechaISO8601(fechaEntrega),
-                creado: fechaHoraActualISO8601,
-                estado: 'creado',
-                finalidad: finalidad,
-                comentario: comentario,
-            }
-        });
-
-        //se crean los productos en la tabla detallePedido
-        const productosGuardados = await Promise.all(productos.map(async (p: ProductoEnPedido) => {
-            const nuevoDetallePedido = await prisma.detallePedido.create({
-                data: {
-                    idPedido: nuevoPedido.id,
-                    idProducto: p.id,
-                    tipo: p.tipo,
-                    tipoAceite: p.tipoAceite,
-                    nombreProducto: p.nombre,
-                    pesoProducto: p.peso,
-                    cantidadEnvases: p.cantidadEnvases,
-                    cantidad: p.cantidad,
-                    valor: p.valor
-                }
-            });
-
-            return nuevoDetallePedido;
-        }));
-        */
 
 		if (nuevoPedido) {
 			//se envia correo notificando
