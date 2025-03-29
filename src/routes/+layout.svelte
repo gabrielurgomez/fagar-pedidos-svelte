@@ -1106,6 +1106,7 @@
 							<Tabla>
 								<thead>
 									<Fila>
+										<CeldaHeader>Tipo</CeldaHeader>
 										<CeldaHeader>Producto</CeldaHeader>
 										<CeldaHeader>Cantidad</CeldaHeader>
 										<CeldaHeader>Total Unds</CeldaHeader>
@@ -1116,6 +1117,7 @@
 								<tbody>
 									{#each pedidoSeleccionado.detallePedido as detalle}
 										<Fila>
+											<Celda>{detalle.tipo}</Celda>
 											<Celda>{productos.find((p) => detalle.idProducto === p.id)?.nombre}</Celda>
 											<Celda>{detalle.cantidad}</Celda>
 											<Celda>
