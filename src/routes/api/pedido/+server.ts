@@ -74,8 +74,8 @@ export const POST: RequestHandler = async ({ request }) => {
 				},
 			});
 		}
-		console.log('typeof fechaEntrega', typeof fechaEntrega);
-		console.log('fechaEntrega', fechaEntrega);
+		//console.log('typeof fechaEntrega', typeof fechaEntrega);
+		//console.log('fechaEntrega', fechaEntrega);
 
 		if (!finalidad) {
 			return new Response(JSON.stringify({ error: 'No se recibio la clave finalidad' }), {
@@ -134,6 +134,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				finalidad: finalidad,
 				comentario: comentario,
 				idPedidoPendiente: null, //un pedido recien creado no tiene un pedido pendiente derivado de el
+				motivoRechazo: null,
 				detallePedido: {
 					create: productos.map((p: ProductoEnPedido) => ({
 						idProducto: p.id,
@@ -149,8 +150,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				creado: fechaHoraActualISO8601_UTC,
 			},
 		});
-
-		console.log('nuevoPedido', nuevoPedido);
+		//console.log('nuevoPedido', nuevoPedido);
 
 		if (nuevoPedido) {
 			//se envia correo notificando
