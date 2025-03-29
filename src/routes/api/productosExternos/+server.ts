@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { pool } from './../../../mysql.config';
 import type { ProductoExternoConsultado } from '$lib/types/producto.type';
+import { TiposProductos } from '$lib/constants/pedido.constant';
 
 //Productos externos son los que no son empacados en caja o bidones, por ejemplo las margarinas
 //En la base de datos de admon se encuentran en la tabla ProductosExternos
@@ -15,7 +16,7 @@ export const GET: RequestHandler = async () => {
 		productosExternos = productosExternos.map((producto) => {
 			return {
 				...producto,
-				tipo: 'externo',
+				tipo: TiposProductos.externo,
 			};
 		});
 		//console.log('productos externos', productosExternos.length);

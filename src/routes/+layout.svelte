@@ -570,7 +570,7 @@
 													productoSeleccionado.nombre = producto.nombre;
 													productoSeleccionado.cantidadEnvases = null; //los productos externos no llevan cantidad de envases
 													productoSeleccionado.tipoAceite = null;
-													productoSeleccionado.tipo = 'externo';
+													productoSeleccionado.tipo = TiposProductos.externo;
 													productoSeleccionado.peso = producto.peso;
 													console.log('productoSeleccionado', productoSeleccionado);
 												}}

@@ -5,7 +5,7 @@ import { obtenerFechaYHoraActual, formetearFechaToISO8601 } from '$lib/utils/fec
 import { transporterSistemas } from '$lib/server/nodemailer';
 import { env } from '$env/dynamic/private';
 import type { ProductoEnPedido } from '$lib/types/producto.type';
-import { EstadosPedido } from '$lib/constants/pedido.constant';
+import { EstadosPedido, TiposProductos } from '$lib/constants/pedido.constant';
 
 const prisma = new PrismaClient();
 
@@ -108,7 +108,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					},
 				);
 			}
-			if (p.tipo !== 'externo' && !p.tipoAceite) {
+			if (p.tipo !== TiposProductos.externo && !p.tipoAceite) {
 				return new Response(
 					JSON.stringify({ error: 'Uno de los productos no tienen el tipoAceite' }),
 					{
