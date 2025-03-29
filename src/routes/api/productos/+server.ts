@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { pool } from './../../../mysql.config';
 import type { ProductoConsultado } from '$lib/types/producto.type';
+import { TiposProductos } from '$lib/constants/pedido.constant';
 
 export const GET: RequestHandler = async () => {
 	try {
@@ -10,11 +11,11 @@ export const GET: RequestHandler = async () => {
 		);
 		let productos = rows as ProductoConsultado[];
 		//console.log('productos', productos);
-		//se le agrega la clave tipo: 'principal' para que el front lo pueda identificar
+		//se le agrega la clave tipo: para que el FE lo pueda identificar
 		productos = productos.map((producto) => {
 			return {
 				...producto,
-				tipo: 'principal',
+				tipo: TiposProductos.principal,
 			};
 		});
 		//console.log('productos', productos);

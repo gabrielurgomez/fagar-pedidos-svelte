@@ -7,7 +7,7 @@
 	type nombresIconos = 'eliminar' | undefined;
 	type tiposBotones = 'button' | 'submit' | 'reset';
 
-	export let variante: Variantes = 'principal'; // por defecto será principal
+	export let variante: Variantes = 'principal';
 	export let cargando: boolean = false;
 	export let tipo: tiposBotones = 'button';
 	export let tamanoIcono: number = 20;
@@ -59,7 +59,7 @@
 			<slot />
 		</button>
 	{:else}
-		<div class="flex justify-center items-center">
+		<div class="flex items-center justify-center">
 			<SpinnerCargando classes={spinnerClasses} tamano={tamanoSpinner} />
 		</div>
 	{/if}

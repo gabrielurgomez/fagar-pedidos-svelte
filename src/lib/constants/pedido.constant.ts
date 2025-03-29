@@ -11,4 +11,9 @@ export enum Tabs {
 	generarPendientes = 'generarPendientes',
 }
 
+export enum TiposProductos {
+	principal = 'PRINCIPAL',
+	externo = 'EXTERNO',
+}
+
 export const LIMITEULTIMOSPEDIDOS = 300;

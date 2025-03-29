@@ -12,6 +12,7 @@
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import type { ClienteSede, Cliente } from '$lib/types/cliente.type';
 	import type { PedidoConDetalleFormulario } from '$lib/types/pedido.type';
+	import { TiposProductos } from '$lib/constants/pedido.constant';
 	import type {
 		ProductoAgregadoAlPedido,
 		ProductoExternoConsultado,
@@ -401,7 +402,7 @@
 </script>
 
 <div class={`contenedorPrincipal`}>
-	<!--Modal para productos del tipo principal-->
+	<!--Modal para productos del tipo PRINCIPAL-->
 	<Modal
 		open={mostrarModalProductos}
 		onOpenChange={() => {
@@ -438,7 +439,7 @@
 													productoSeleccionado.id = producto.id;
 													productoSeleccionado.nombre = producto.nombre;
 													productoSeleccionado.cantidadEnvases = producto.cantidadEnvases;
-													productoSeleccionado.tipo = 'principal';
+													productoSeleccionado.tipo = TiposProductos.principal;
 													productoSeleccionado.tipoAceite = producto.tipoAceite;
 													productoSeleccionado.peso = producto.peso;
 													//mostrarModalProductos = false;
@@ -464,11 +465,11 @@
 					<Boton
 						variante="link verdeFagar"
 						on:click={() => {
-							console.log('se agregará el producto', productoSeleccionado);
-
+							//console.log('se agregará el producto', productoSeleccionado);
 							const productoExiste = productosAgregados.some(
 								(producto) =>
-									producto.id === productoSeleccionado.id && producto.tipo === 'principal',
+									producto.id === productoSeleccionado.id &&
+									producto.tipo === TiposProductos.principal,
 							);
 							if (!productoExiste) {
 								if (productoSeleccionado.cantidad <= 0) {
@@ -596,10 +597,11 @@
 						on:click={() => {
 							console.log('se agregará el producto', productoSeleccionado);
 
-							//tiene que validarse el id pero tambien el tipo por que puede que se agregue un producto "principal" y "externo" con el mismo id
+							//tiene que validarse el id pero tambien el tipo por que puede que se agregue un producto "PRINCIPAL" y "EXTERNO" con el mismo id
 							const productoExiste = productosAgregados.some(
 								(producto) =>
-									producto.id === productoSeleccionado.id && producto.tipo === 'externo',
+									producto.id === productoSeleccionado.id &&
+									producto.tipo === TiposProductos.externo,
 							);
 							if (!productoExiste) {
 								if (productoSeleccionado.cantidad <= 0) {
@@ -669,7 +671,7 @@
 						class="mt-4"
 						tipo="submit"
 						cargando={estadoActual.validandoUsuario}
-						variante={'principal'}
+						variante="principal"
 					>
 						Validar
 					</Boton>
