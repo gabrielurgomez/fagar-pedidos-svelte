@@ -941,8 +941,10 @@
 													on:click={() => {
 														productosAgregados = productosAgregados.filter(
 															(producto) =>
-																producto.id !== productoAgregado.id &&
-																producto.tipo !== productoAgregado.tipo,
+																!(
+																	producto.id === productoAgregado.id &&
+																	producto.tipo === productoAgregado.tipo
+																),
 														);
 													}}
 												>
