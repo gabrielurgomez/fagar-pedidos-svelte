@@ -1084,7 +1084,7 @@
 								<div class="flex flex-col rounded-lg border p-4">
 									<div class="flex flex-col sm:flex-row">
 										<div class="me-2 font-bold">Cliente:</div>
-										{clientes.find((c) => c.id === pedidoSeleccionado?.idCliente)?.nombreComercial}
+										{clientes.find((c) => c.id === pedidoSeleccionado?.idCliente)?.razonSocial}
 									</div>
 									<div class="flex flex-col sm:flex-row">
 										<div class="me-2 font-bold">Sede:</div>
