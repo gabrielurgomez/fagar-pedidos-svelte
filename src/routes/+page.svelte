@@ -11,7 +11,7 @@
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import type { ClienteSede, Cliente } from '$lib/types/cliente.type';
-	import type { PedidoConDetalleFormulario } from '$lib/types/pedido.type';
+	import type { PedidoConDetalleFormulario, FinalidadesPedido } from '$lib/types/pedido.type';
 	import { TiposProductos } from '$lib/constants/pedido.constant';
 	import type {
 		ProductoAgregadoAlPedido,
@@ -270,7 +270,7 @@
 			return;
 		}
 
-		if (finalidadPedidoSeleccionado.id === 0) {
+		if (finalidadPedidoSeleccionado === 'SELECCIONE') {
 			Swal.fire({
 				icon: 'info',
 				title: 'Finalidad no seleccionada',
@@ -281,7 +281,7 @@
 
 		pedido.clienteSedeCiudad = sedeSeleccionada.ciudad;
 		pedido.clienteSedeDireccion = sedeSeleccionada.direccion;
-		pedido.finalidad = finalidadPedidoSeleccionado.nombre;
+		pedido.finalidad = finalidadPedidoSeleccionado;
 
 		if (productosAgregados.length === 0) {
 			Swal.fire({
@@ -324,7 +324,7 @@
 					fechaEntrega: '',
 					comentario: '',
 					estado: EstadosPedido.creado,
-					finalidad: '',
+					finalidad: 'SELECCIONE',
 				};
 
 				sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
@@ -375,11 +375,8 @@
 		return producto.nombre.toLowerCase().includes(nombreProductoExternoBuscar.toLowerCase());
 	});
 
-	let finalidadesPedido = [
-		{ id: 1, nombre: 'factura' },
-		{ id: 2, nombre: 'cotizacion' },
-	];
-	let finalidadPedidoSeleccionado = { id: 0, nombre: '' };
+	let finalidadesPedido: FinalidadesPedido[] = ['SELECCIONE', 'FACTURA', 'PROFORMA'];
+	let finalidadPedidoSeleccionado: FinalidadesPedido = 'SELECCIONE';
 
 	let clienteBuscar = '';
 	let touchedInputCliente = false;
@@ -780,16 +777,16 @@
 						<Combobox
 							items={finalidadesPedido}
 							selected={{
-								value: finalidadPedidoSeleccionado.id,
-								label: finalidadPedidoSeleccionado.nombre.toUpperCase(),
+								value: finalidadPedidoSeleccionado,
+								label: finalidadPedidoSeleccionado,
 							}}
 						>
 							<ComboboxInput placeholder="Seleccione..." />
 							<ComboboxContent>
-								{#each finalidadesPedido as finalidadPedido (finalidadPedido.id)}
+								{#each finalidadesPedido as finalidadPedido}
 									<ComboboxItem
-										value={finalidadPedido.nombre}
-										label={finalidadPedido.nombre.toUpperCase()}
+										value={finalidadPedido}
+										label={finalidadPedido}
 										on:click={() => {
 											finalidadPedidoSeleccionado = finalidadPedido;
 											console.log('finalidadPedidoSeleccionado', finalidadPedidoSeleccionado);

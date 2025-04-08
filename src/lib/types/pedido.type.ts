@@ -9,3 +9,5 @@ export type PedidoConDetalleFormulario = Omit<
 	fechaCreado: Date | null;
 	detallePedido: detallePedido[];
 };
+
+export type FinalidadesPedido = 'SELECCIONE' | 'FACTURA' | 'PROFORMA';
