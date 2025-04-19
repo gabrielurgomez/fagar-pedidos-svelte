@@ -10,7 +10,6 @@ export const GET: RequestHandler = async () => {
 			'SELECT id, nombre, cantidadEnvases, tipoAceite, peso FROM `Productos`',
 		);
 		let productos = rows as ProductoConsultado[];
-		//console.log('productos', productos);
 		//se le agrega la clave tipo: para que el FE lo pueda identificar
 		productos = productos.map((producto) => {
 			return {
@@ -18,7 +17,6 @@ export const GET: RequestHandler = async () => {
 				tipo: TiposProductos.principal,
 			};
 		});
-		//console.log('productos', productos);
 		if (productos.length > 0) {
 			return new Response(JSON.stringify(productos), {
 				headers: {

@@ -85,8 +85,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				};
 			});
 
-			//console.log('pedidosFechasFormateadas', pedidosFechasFormateadas);
-
 			return new Response(JSON.stringify(pedidosFechasFormateadas), {
 				status: 200,
 				headers: { 'Content-Type': 'application/json' },

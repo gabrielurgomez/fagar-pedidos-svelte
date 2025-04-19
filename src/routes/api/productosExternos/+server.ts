@@ -19,7 +19,6 @@ export const GET: RequestHandler = async () => {
 				tipo: TiposProductos.externo,
 			};
 		});
-		//console.log('productos externos', productosExternos.length);
 		if (productosExternos.length > 0) {
 			return new Response(JSON.stringify(productosExternos), {
 				headers: {

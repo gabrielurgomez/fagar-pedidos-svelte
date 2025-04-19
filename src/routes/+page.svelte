@@ -64,17 +64,14 @@
 	const consultarClientesDelVendedor = async (idVendedor: number) => {
 		estadoActual.consultandoClientes = true;
 		try {
-			//console.log('Consultar clientes');
 			let rta = await fetch(`/api/clientes/${idVendedor}`, {
 				method: 'GET',
 				cache: 'no-cache',
 				headers: { 'Content-Type': 'application/json' },
 			});
 			let clientesEncontrados = await rta.json();
-			//console.log('clientes', clientes);
 			estadoActual.consultandoClientes = false;
 			return clientesEncontrados;
-			//productosFiltrados = productos;
 		} catch (error) {
 			console.error('Error al consultar clientes:', error);
 		}
@@ -96,7 +93,6 @@
 			);
 			if (rta.status === 200) {
 				ultimosPedidos = await rta.json();
-				//console.log('ultimosPedidos', ultimosPedidos);
 			}
 
 			estadoActual.consultandoUltimosPedidos = false;
@@ -115,17 +111,13 @@
 	const consultarProductos = async () => {
 		estadoActual.consultandoProductos = true;
 		try {
-			console.log('Consultar productos');
 			let rta = await fetch('/api/productos', {
 				method: 'GET',
 				cache: 'no-cache',
 				headers: { 'Content-Type': 'application/json' },
 			});
 			productos = await rta.json();
-			//console.log('productos', productos);
 			estadoActual.consultandoProductos = false;
-			//return productos;
-			//productosFiltrados = productos;
 		} catch (error) {
 			console.error('Error al consultar vendedores:', error);
 		}
@@ -134,14 +126,12 @@
 	const consultarProductosExternos = async () => {
 		estadoActual.consultandoProductosExternos = true;
 		try {
-			console.log('Consultar productos externos');
 			let rta = await fetch('/api/productosExternos', {
 				method: 'GET',
 				cache: 'no-cache',
 				headers: { 'Content-Type': 'application/json' },
 			});
 			productosExternos = await rta.json();
-			console.log('productosExternos', productosExternos);
 			estadoActual.consultandoProductosExternos = false;
 		} catch (error) {
 			console.error('Error al consultar productos externos:', error);
@@ -164,7 +154,6 @@
 	let productosAgregados: ProductoAgregadoAlPedido[] = [];
 
 	const validarUsuario = async () => {
-		console.log('se validará el usuario', usuario);
 		if (!usuario.numeroCedula) {
 			Swal.fire({ icon: 'info', title: 'Valide datos', text: 'Debe digitar el número de cedula' });
 			return;
@@ -177,7 +166,6 @@
 			});
 			return;
 		}
-		//console.log('se validará el usuario', usuario);
 		estadoActual.validandoUsuario = true;
 
 		const rtaJson = await fetch(
@@ -195,7 +183,6 @@
 			if (clientesEncontrados.length > 0) {
 				clientes = clientesEncontrados;
 
-				//console.log('infoVendedor logueado', infoVendedor);
 				vendedorLogueado = {
 					id: infoVendedor.id,
 					nombre: infoVendedor.nombre,
@@ -226,9 +213,6 @@
 	};
 
 	const crearPedido = async () => {
-		console.clear();
-		console.log('se creará el pedido', pedido);
-
 		if (!vendedorLogueado) {
 			alert(
 				'Favor avisar a sistemas, no se está capturando correctamente el usuario logueado para enviar al backend',
@@ -291,9 +275,6 @@
 			});
 			return;
 		}
-		console.log('Se creará el pedido', pedido);
-		console.log('con los productos', productosAgregados);
-
 		estadoActual.creandoPedido = true;
 
 		const rtaPedidoJson = await fetch('/api/pedido', {
@@ -305,11 +286,9 @@
 				nombreVendedor: vendedorLogueado.nombre,
 			}),
 		});
-		//console.log('rtaPedidoJson', rtaPedidoJson);
 		switch (rtaPedidoJson.status) {
 			case 201: {
 				let rta = await rtaPedidoJson.json();
-				//console.log('rta', rta);
 				Swal.fire({
 					icon: 'success',
 					title: 'Creado',
@@ -485,7 +464,6 @@
 												razonSocial: cliente.razonSocial,
 												sedesClientes: cliente.sedes,
 											};
-											// console.log('clienteSeleccionado', clienteSeleccionado);
 										}}
 									/>
 								{:else}
@@ -511,7 +489,6 @@
 											label={`${sede.ciudad} - ${sede.direccion}`}
 											on:click={() => {
 												sedeSeleccionada = sede;
-												console.log('sedeSeleccionada', sedeSeleccionada);
 											}}
 										/>
 									{:else}
@@ -538,7 +515,6 @@
 										label={finalidadPedido}
 										on:click={() => {
 											finalidadPedidoSeleccionado = finalidadPedido;
-											console.log('finalidadPedidoSeleccionado', finalidadPedidoSeleccionado);
 										}}
 									/>
 								{:else}
@@ -552,7 +528,6 @@
 							<Boton
 								variante="link verdeFagar"
 								on:click={() => {
-									//console.log('se mostrará el modal para productos principales');
 									productoSeleccionado = null;
 									mostrarModalProductos = true;
 									consultarProductos();
@@ -563,7 +538,6 @@
 							<Boton
 								variante="link verdeFagar"
 								on:click={() => {
-									//console.log('se mostrará el modal para productos externos');
 									productoSeleccionado = null;
 									mostrarModalProductosExternos = true;
 									consultarProductosExternos();
@@ -970,9 +944,6 @@
 													tipoAceite: producto.tipoAceite,
 													peso: producto.peso,
 												};
-
-												//mostrarModalProductos = false;
-												console.log('productoSeleccionado', productoSeleccionado);
 											}}
 										>
 											<td class="px-4">{producto.id}</td>
@@ -997,7 +968,6 @@
 					<Boton
 						variante="link verdeFagar"
 						on:click={() => {
-							//console.log('se agregará el producto', productoSeleccionado);
 							const productoYaAgregado = productosAgregados.some(
 								(producto) =>
 									producto.id === productoSeleccionado?.id &&
@@ -1030,7 +1000,6 @@
 									return;
 								}
 								productosAgregados = [...productosAgregados, productoSeleccionado];
-								// console.log('productosAgregados', productosAgregados);
 								productoSeleccionado = null;
 								mostrarModalProductos = false;
 							} else {
@@ -1123,8 +1092,6 @@
 				<Boton
 					variante="link verdeFagar"
 					on:click={() => {
-						// console.log('se agregará el producto', productoSeleccionado);
-
 						//tiene que validarse el id pero tambien el tipo por que puede que se agregue un producto "PRINCIPAL" y "EXTERNO" con el mismo id
 						const productoExiste = productosAgregados.some(
 							(producto) =>
@@ -1149,7 +1116,6 @@
 								return;
 							}
 							productosAgregados = [...productosAgregados, productoSeleccionado];
-							console.log('productosAgregados', productosAgregados);
 							productoSeleccionado = {
 								id: 0,
 								nombre: '',

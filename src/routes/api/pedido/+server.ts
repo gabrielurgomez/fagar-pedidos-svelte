@@ -13,7 +13,6 @@ export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const { timeStampActual_UTCMinus5_ObjJS, fechaHoraActualISO8601_UTC } =
 			obtenerFechaYHoraActual();
-		//console.log('fechaHoraActualISO8601', fechaHoraActualISO8601);
 
 		const {
 			idCliente,
@@ -74,8 +73,6 @@ export const POST: RequestHandler = async ({ request }) => {
 				},
 			});
 		}
-		//console.log('typeof fechaEntrega', typeof fechaEntrega);
-		//console.log('fechaEntrega', fechaEntrega);
 
 		if (!finalidad) {
 			return new Response(JSON.stringify({ error: 'No se recibio la clave finalidad' }), {
@@ -150,8 +147,6 @@ export const POST: RequestHandler = async ({ request }) => {
 				creado: fechaHoraActualISO8601_UTC,
 			},
 		});
-		//console.log('nuevoPedido', nuevoPedido);
-
 		if (nuevoPedido) {
 			//se envia correo notificando
 			let cuerpoHtml = '<b>Se notifica nuevo pedido</b><br>';
@@ -172,9 +167,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					subject: `PEDIDOS - Nuevo pedido ID #${nuevoPedido.id}`,
 					html: cuerpoHtml,
 				});
-				//console.log('envio', envio)
 			} catch (e) {
-				console.log('e', e);
 				return new Response(
 					JSON.stringify({
 						message: `El pedido se creó pero no se pudo notificar por correo electronico a la empresa, favor avisar de este error, pedido creado con ID:${nuevoPedido.id}`,
