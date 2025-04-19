@@ -36,8 +36,8 @@
 	}
 
 	$: if (variante === 'link rojo') {
-		clases = 'hover:font-bold rounded text-red-500 hover:text-red-600';
-		spinnerClasses = 'fill-green-700';
+		clases = 'text-red-400 hover:text-red-600';
+		spinnerClasses = 'fill-green-600';
 	}
 </script>
 

@@ -2,15 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-
 .contenedorTabs {
-    @apply flex flex-row items-center justify-center mb-4;
+	@apply mb-2 flex flex-row items-center justify-center;
 }
 
 .tab {
-    @apply inline-flex gap-2 sm:text-lg text-sm items-center justify-center p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300
+	@apply inline-flex items-center justify-center gap-2 rounded-t-lg border-b-2 p-4 text-sm hover:border-gray-300 hover:text-gray-600 sm:text-lg dark:hover:text-gray-300;
 }
 
 .tab-activo {
-    @apply text-green-700 font-bold border-green-700 dark:border-green-400;
+	@apply border-green-700 font-bold text-green-700 dark:border-green-400;
 }

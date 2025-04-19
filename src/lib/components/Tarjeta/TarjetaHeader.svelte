@@ -1,9 +1,18 @@
 <script lang="ts">
+	import { cn } from '../../../utils';
 	export let titulo: string = '';
+
+	let customClasses: string = '';
+	export { customClasses as class };
 </script>
 
 {#if titulo}
-	<div class="border-b-2 text-lg border-neutral-100 py-4 flex flex-row justify-center items-center">
+	<div
+		class={cn(
+			'sticky flex flex-row items-center justify-center border-b-2 border-neutral-100 bg-white py-4 text-lg',
+			customClasses,
+		)}
+	>
 		{titulo}
 	</div>
 {/if}

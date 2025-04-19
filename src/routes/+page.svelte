@@ -20,6 +20,7 @@
 	} from '$lib/types/producto.type';
 	import { EstadosPedido, LIMITEULTIMOSPEDIDOS } from '$lib/constants/pedido.constant';
 	import { formatearFechaDDMMMYYYY } from '$lib/utils/fechas';
+	import type { VendedorLogueado } from '$lib/types/vendedor.type';
 
 	enum Tabs {
 		ninguno,
@@ -52,25 +53,11 @@
 	let productos: ProductoConsultado[] = [];
 	let productosExternos: ProductoExternoConsultado[] = [];
 	let ultimosPedidos: PedidoConDetalleFormulario[] = [];
-
-	let pedidoSeleccionado: PedidoConDetalleFormulario = {
-		id: 0,
-		idVendedor: 0,
-		idCliente: 0,
-		clienteSedeCiudad: '',
-		clienteSedeDireccion: '',
-		fechaCreado: null,
-		fechaEntrega: null,
-		comentario: '',
-		detallePedido: [],
-		estado: '',
-		motivoRechazo: '',
-		finalidad: '',
-	};
+	let pedidoSeleccionado: PedidoConDetalleFormulario | null = null;
 
 	let tabActivo: Tabs = Tabs.crearPedido;
 
-	let vendedorLogueado: { id: number; nombre: string } = { id: 0, nombre: '' };
+	let vendedorLogueado: VendedorLogueado | null = null;
 
 	let clientes: Cliente[] = [];
 
@@ -95,6 +82,9 @@
 
 	const consultarUltimosPedidos = async () => {
 		estadoActual.consultandoUltimosPedidos = true;
+		if (!vendedorLogueado) {
+			return;
+		}
 		try {
 			let rta = await fetch(
 				`/api/pedidos?finalidad=recientes&buscarpor=id&limiteregistros=${LIMITEULTIMOSPEDIDOS}&ordenadopor=id&condicionordenado=desc&idvendedor=${vendedorLogueado.id}`,
@@ -158,18 +148,18 @@
 		}
 	};
 
-	let productoSeleccionadoDefecto = {
-		id: 0,
-		nombre: '',
-		cantidad: 0,
-		cantidadEnvases: 0,
-		valor: 0,
-		tipo: '',
-		tipoAceite: '',
-		peso: 0,
-	};
+	// let productoSeleccionadoDefecto = {
+	// 	id: 0,
+	// 	nombre: '',
+	// 	cantidad: 0,
+	// 	cantidadEnvases: 0,
+	// 	valor: 0,
+	// 	tipo: '',
+	// 	tipoAceite: '',
+	// 	peso: 0,
+	// };
 
-	let productoSeleccionado: ProductoAgregadoAlPedido = productoSeleccionadoDefecto;
+	let productoSeleccionado: ProductoAgregadoAlPedido | null = null;
 
 	let productosAgregados: ProductoAgregadoAlPedido[] = [];
 
@@ -206,9 +196,12 @@
 				clientes = clientesEncontrados;
 
 				//console.log('infoVendedor logueado', infoVendedor);
-				vendedorLogueado.id = infoVendedor.id;
+				vendedorLogueado = {
+					id: infoVendedor.id,
+					nombre: infoVendedor.nombre,
+				};
+
 				pedido.idVendedor = infoVendedor.id;
-				vendedorLogueado.nombre = infoVendedor.nombre;
 
 				//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
 				tabActivo = Tabs.crearPedido;
@@ -235,6 +228,13 @@
 	const crearPedido = async () => {
 		console.clear();
 		console.log('se creará el pedido', pedido);
+
+		if (!vendedorLogueado) {
+			alert(
+				'Favor avisar a sistemas, no se está capturando correctamente el usuario logueado para enviar al backend',
+			);
+			return;
+		}
 
 		if (!pedido.idVendedor) {
 			alert(
@@ -327,9 +327,11 @@
 					finalidad: 'SELECCIONE',
 				};
 
+				finalidadPedidoSeleccionado = 'SELECCIONE';
 				sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 				clienteSeleccionado = { id: 0, razonSocial: '', sedesClientes: [] };
-				productoSeleccionado = productoSeleccionadoDefecto;
+				productoSeleccionado = null;
+
 				break;
 			}
 
@@ -358,14 +360,6 @@
 
 	let nombreProductoBuscar = '';
 	let nombreProductoExternoBuscar = '';
-	/*
-	SI FUERA COMBOBOX
-	let touchedInputProductos = false;
-	$: productosFiltrados =
-		inputValue && touchedInput
-			? productos.filter((producto) => producto.nombre.includes(nombreProductoBuscar.toLowerCase()))
-			: productos;
-	*/
 
 	$: productosFiltrados = productos.filter((producto) => {
 		return producto.nombre.toLowerCase().includes(nombreProductoBuscar.toLowerCase());
@@ -403,289 +397,43 @@
 	<meta name="description" content="Pedidos FAGAR" />
 </svelte:head>
 
-<div class={`contenedorPrincipal`}>
-	<!--Modal para productos del tipo PRINCIPAL-->
-	<Modal
-		open={mostrarModalProductos}
-		onOpenChange={() => {
-			mostrarModalProductos = !mostrarModalProductos;
-		}}
-	>
-		<ModalContent>
-			<ModalHeader>Seleccione Producto</ModalHeader>
-			{#if estadoActual.consultandoProductos}
-				<PuntosCargando />
-			{:else}
-				<div class="w-full px-4">
-					<div class="mt-4">
-						<input
-							class="input-texto mb-4 mt-4"
-							type="text"
-							placeholder="Filtrar productos"
-							bind:value={nombreProductoBuscar}
-						/>
-						<div class="mt-4 h-60 overflow-y-auto sm:h-96">
-							{#if productosFiltrados.length > 0}
-								<table class="w-full">
-									<thead class="sticky top-0 bg-white">
-										<tr>
-											<th class="px-4">ID</th>
-											<th class="px-4">Producto</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#each productosFiltrados as producto}
-											<tr
-												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 text-slate-600 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200`}
-												on:click={() => {
-													productoSeleccionado.id = producto.id;
-													productoSeleccionado.nombre = producto.nombre;
-													productoSeleccionado.cantidadEnvases = producto.cantidadEnvases;
-													productoSeleccionado.tipo = TiposProductos.principal;
-													productoSeleccionado.tipoAceite = producto.tipoAceite;
-													productoSeleccionado.peso = producto.peso;
-													//mostrarModalProductos = false;
-													console.log('productoSeleccionado', productoSeleccionado);
-												}}
-											>
-												<td class="px-4">{producto.id}</td>
-												<td class="px-4">{producto.nombre}</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-							{:else}
-								<div class="text-center">No hay coincidencias</div>
-							{/if}
-						</div>
-					</div>
-					<label for="cantidad" class="input-label mt-4">Cantidad</label>
-					<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
-
-					<label for="valor" class="input-label mt-4">Valor unit (caja o bidon)</label>
-					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
-					<Boton
-						variante="link verdeFagar"
-						on:click={() => {
-							//console.log('se agregará el producto', productoSeleccionado);
-							const productoExiste = productosAgregados.some(
-								(producto) =>
-									producto.id === productoSeleccionado.id &&
-									producto.tipo === TiposProductos.principal,
-							);
-							if (!productoExiste) {
-								if (productoSeleccionado.cantidad <= 0) {
-									Swal.fire({
-										icon: 'info',
-										title: 'Cantidad no válida',
-										text: 'La cantidad del producto debe ser mayor a 0',
-									});
-									return;
-								}
-								if (productoSeleccionado.valor <= 0) {
-									Swal.fire({
-										icon: 'info',
-										title: 'Valor no válido',
-										text: 'El valor del producto debe ser mayor a 0',
-									});
-									return;
-								}
-
-								if (!productoSeleccionado.cantidadEnvases) {
-									Swal.fire({
-										icon: 'info',
-										title: 'Cantidad de envases no válida',
-										text: 'El producto seleccionado no tiene parametrizado la cantidad de envases',
-									});
-									return;
-								}
-								productosAgregados = [...productosAgregados, productoSeleccionado];
-								console.log('productosAgregados', productosAgregados);
-								productoSeleccionado = {
-									id: 0,
-									nombre: '',
-									cantidad: 0,
-									cantidadEnvases: 0,
-									valor: 0,
-									tipo: '',
-									tipoAceite: '',
-									peso: 0,
-								};
-								mostrarModalProductos = false;
-							} else {
-								Swal.fire({
-									icon: 'info',
-									title: 'Producto ya agregado',
-									text: 'El producto seleccionado ya fue agregado al pedido',
-								});
-							}
-						}}
-					>
-						Agregar al pedido
-					</Boton>
-				</div>
-			{/if}
-			<ModalFooter>
-				<Boton variante="link rojo" on:click={() => (mostrarModalProductos = false)}>
-					Cancelar
-				</Boton>
-			</ModalFooter>
-		</ModalContent>
-	</Modal>
-
-	<!--Modal para productos del tipo externo-->
-	<Modal
-		open={mostrarModalProductosExternos}
-		onOpenChange={() => {
-			mostrarModalProductosExternos = !mostrarModalProductosExternos;
-		}}
-	>
-		<ModalContent>
-			<ModalHeader>Seleccione Producto Externo</ModalHeader>
-			{#if estadoActual.consultandoProductosExternos}
-				<PuntosCargando />
-			{:else}
-				<div class="w-full px-4">
-					<div class="mt-4">
-						<input
-							class="input-texto mb-4 mt-4"
-							type="text"
-							placeholder="Filtrar productos"
-							bind:value={nombreProductoExternoBuscar}
-						/>
-						<div class="mt-4 h-60 overflow-y-auto sm:h-96">
-							{#if productosExternosFiltrados.length > 0}
-								<table class="w-full">
-									<thead class="sticky top-0 bg-white">
-										<tr>
-											<th class="px-4">ID</th>
-											<th class="px-4">Producto</th>
-											<th class="px-4">Existencias</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#each productosExternosFiltrados as producto}
-											<tr
-												class={`${productoSeleccionado.id === producto.id ? 'bg-lime-300' : ''}  py-2 text-slate-600 hover:cursor-pointer hover:rounded-lg hover:bg-neutral-200`}
-												on:click={() => {
-													productoSeleccionado.id = producto.id;
-													productoSeleccionado.nombre = producto.nombre;
-													productoSeleccionado.cantidadEnvases = null; //los productos externos no llevan cantidad de envases
-													productoSeleccionado.tipoAceite = null;
-													productoSeleccionado.tipo = TiposProductos.externo;
-													productoSeleccionado.peso = producto.peso;
-													console.log('productoSeleccionado', productoSeleccionado);
-												}}
-											>
-												<td class="px-4">{producto.id}</td>
-												<td class="px-4">{producto.nombre}</td>
-												<td class="px-4 text-center">{producto.existencias}</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-							{:else}
-								<div class="text-center">No hay coincidencias</div>
-							{/if}
-						</div>
-					</div>
-					<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
-					<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
-
-					<label for="valor" class="input-label mt-4">Valor unit caja</label>
-					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
-					<Boton
-						variante="link verdeFagar"
-						on:click={() => {
-							console.log('se agregará el producto', productoSeleccionado);
-
-							//tiene que validarse el id pero tambien el tipo por que puede que se agregue un producto "PRINCIPAL" y "EXTERNO" con el mismo id
-							const productoExiste = productosAgregados.some(
-								(producto) =>
-									producto.id === productoSeleccionado.id &&
-									producto.tipo === TiposProductos.externo,
-							);
-							if (!productoExiste) {
-								if (productoSeleccionado.cantidad <= 0) {
-									Swal.fire({
-										icon: 'info',
-										title: 'Cantidad no válida',
-										text: 'La cantidad del producto debe ser mayor a 0',
-									});
-									return;
-								}
-								if (productoSeleccionado.valor <= 0) {
-									Swal.fire({
-										icon: 'info',
-										title: 'Valor no válido',
-										text: 'El valor del producto debe ser mayor a 0',
-									});
-									return;
-								}
-								productosAgregados = [...productosAgregados, productoSeleccionado];
-								console.log('productosAgregados', productosAgregados);
-								productoSeleccionado = {
-									id: 0,
-									nombre: '',
-									cantidad: 0,
-									cantidadEnvases: 0,
-									valor: 0,
-									tipo: '',
-									tipoAceite: '',
-									peso: 0,
-								};
-								mostrarModalProductosExternos = false;
-							} else {
-								Swal.fire({
-									icon: 'info',
-									title: 'Producto ya agregado',
-									text: 'El producto seleccionado ya fue agregado al pedido',
-								});
-							}
-						}}
-					>
-						Agregar al pedido
-					</Boton>
-				</div>
-			{/if}
-			<ModalFooter>
-				<Boton variante="link rojo" on:click={() => (mostrarModalProductosExternos = false)}>
-					Cancelar
-				</Boton>
-			</ModalFooter>
-		</ModalContent>
-	</Modal>
-
-	<div class="flex flex-col items-center">
-		<img alt="logo" src={logo} class="h-25 sm:h-45 w-40 sm:w-80" />
-	</div>
-	{#if vendedorLogueado.id === 0}
-		<Tarjeta>
+<div class="contenedorPrincipal">
+	<img alt="logo" src={logo} class="h-25 sm:h-45 w-40 sm:w-80" />
+	{#if !vendedorLogueado}
+		<Tarjeta class="lg:w-1/3">
 			<TarjetaHeader titulo={'Validación de usuario'} />
 			<TarjetaBody>
-				<form class="flex flex-col" on:submit|preventDefault={validarUsuario}>
+				<form class="flex w-full flex-col" on:submit|preventDefault={validarUsuario}>
 					<label for="usuario" class="input-label">Numero cedula</label>
 					<input class="input-texto" bind:value={usuario.numeroCedula} type="text" />
 
 					<label for="contrasena" class="input-label mt-4">Fecha expedición</label>
-					<input class="input-texto" bind:value={usuario.fechaExpedicionDocumento} type="date" />
-					<Boton
-						class="mt-4"
-						tipo="submit"
-						cargando={estadoActual.validandoUsuario}
-						variante="principal"
-					>
+					<input
+						class="input-texto mb-4"
+						bind:value={usuario.fechaExpedicionDocumento}
+						type="date"
+					/>
+					<Boton tipo="submit" cargando={estadoActual.validandoUsuario} variante="principal">
 						Validar
 					</Boton>
 				</form>
 			</TarjetaBody>
 		</Tarjeta>
 	{:else}
-		<div>
-			<h1 class="text-center text-2xl">{vendedorLogueado.nombre}</h1>
-		</div>
-
-		<div class="fila-1columna mt-8">
+		<h1 class="text-center">{vendedorLogueado.nombre}</h1>
+		<Boton
+			class="w-1/2 sm:w-1/4"
+			variante="link rojo"
+			on:click={() => {
+				vendedorLogueado = { id: 0, nombre: '' };
+				productos = [];
+				productosFiltrados = [];
+				tabActivo = Tabs.ninguno;
+			}}
+		>
+			Cerrar sesión
+		</Boton>
+		<div class="fila-1columna mt-4">
 			<div class="contenedorTabs">
 				<div class={`tab ${tabActivo === Tabs.crearPedido ? 'tab-activo' : ''}`}>
 					<IconoGuardar tamano={20} />
@@ -698,10 +446,11 @@
 						Crear
 					</button>
 				</div>
-
 				<button
 					on:click={() => {
 						tabActivo = Tabs.consultarUltimosPedidos;
+						//por si vengo de otro tab
+						pedidoSeleccionado = null;
 						consultarUltimosPedidos();
 					}}
 					class={`tab ${tabActivo === Tabs.consultarUltimosPedidos ? 'tab-activo' : ''}`}
@@ -713,9 +462,9 @@
 
 		{#if tabActivo === Tabs.crearPedido}
 			<Tarjeta>
-				<TarjetaHeader titulo={'Crear pedido'}></TarjetaHeader>
+				<TarjetaHeader titulo="Crear pedido" />
 				<TarjetaBody>
-					<form method="POST" on:submit|preventDefault={crearPedido}>
+					<form method="POST" class="w-full" on:submit|preventDefault={crearPedido}>
 						<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
 						<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
 						<label for="Seleccione cliente" class="input-label">Seleccione cliente</label>
@@ -736,9 +485,9 @@
 												razonSocial: cliente.razonSocial,
 												sedesClientes: cliente.sedes,
 											};
-											console.log('clienteSeleccionado', clienteSeleccionado);
+											// console.log('clienteSeleccionado', clienteSeleccionado);
 										}}
-									></ComboboxItem>
+									/>
 								{:else}
 									<span class="block px-5 py-2 text-sm text-muted-foreground">
 										No results found
@@ -764,7 +513,7 @@
 												sedeSeleccionada = sede;
 												console.log('sedeSeleccionada', sedeSeleccionada);
 											}}
-										></ComboboxItem>
+										/>
 									{:else}
 										<span class="block px-5 py-2 text-sm text-muted-foreground">
 											No results found
@@ -804,8 +553,9 @@
 								variante="link verdeFagar"
 								on:click={() => {
 									//console.log('se mostrará el modal para productos principales');
-									consultarProductos();
+									productoSeleccionado = null;
 									mostrarModalProductos = true;
+									consultarProductos();
 								}}
 							>
 								Agregar producto tipo principal
@@ -814,88 +564,18 @@
 								variante="link verdeFagar"
 								on:click={() => {
 									//console.log('se mostrará el modal para productos externos');
-									consultarProductosExternos();
+									productoSeleccionado = null;
 									mostrarModalProductosExternos = true;
+									consultarProductosExternos();
 								}}
 							>
 								Agregar producto tipo externo
 							</Boton>
 						</div>
-						<!-- ESTO ES SI FUERA A IMPLEMENTAR LA LISTA DE PRODUCTOS A AGREGAR EN COMBOBOX Y NO EN MODAL
-							<div class="border-t my-4"></div>
-							<label for="Seleccione cliente">Agregue productos</label>
-							
-							{#if estadoActual.consultandoProductos}
-								<PuntosCargando />
-							{:else}
-								<Combobox
-									items={productosFiltrados}
-									bind:nombreProductoBuscar
-									bind:touchedInputProductos
-								>
-									<ComboboxInput placeholder="Seleccione..." />
-									<ComboboxContent>
-										{#each productosFiltrados as producto}
-											<ComboboxItem
-												value={producto.id}
-												label={producto.nombre}
-												on:click={() => {
-													productoSeleccionado.id = producto.id;
-													productoSeleccionado.nombre = producto.nombre;
-													//mostrarModalProductos = false;
-													console.log('productoSeleccionado', productoSeleccionado);
-												}}
-											>
-												ID #{producto.id}-{producto.nombre}
-											</ComboboxItem>
-										{/each}
-									</ComboboxContent>
-								</Combobox>
-							{/if}
-					
-						<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
-						<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
-
-						<label for="valor" class="input-label mt-4">Valor unit caja</label>
-						<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
-						<Boton
-							variante="link verdeFagar"
-							onClick={() => {
-								console.log('se agregará el producto', productoSeleccionado);
-
-								const productoExiste = productosAgregados.some(
-									(producto) => producto.id === productoSeleccionado.id,
-								);
-								if (!productoExiste) {
-									if (productoSeleccionado.cantidad <= 0) {
-										Swal.fire({
-											icon: 'info',
-											title: 'Cantidad no válida',
-											text: 'La cantidad del producto debe ser mayor a 0',
-										});
-										return;
-									}
-									productosAgregados = [...productosAgregados, productoSeleccionado];
-									console.log('productosAgregados', productosAgregados);
-									productoSeleccionado = { id: 0, nombre: '', cantidad: 0, valor: 0 };
-									mostrarModalProductos = false;
-								} else {
-									Swal.fire({
-										icon: 'info',
-										title: 'Producto ya agregado',
-										text: 'El producto seleccionado ya fue agregado al pedido',
-									});
-								}
-							}}
-						>
-							Agregar al pedido
-						</Boton>
-						-->
-
 						<br />
 						<!--tabla que muestra los productos agregados-->
 						{#if productosAgregados.length > 0}
-							<div class="mb-4 rounded-lg pt-2">
+							<div class="mb-4 overflow-y-auto rounded-lg pt-2">
 								<Tabla>
 									<Fila>
 										<CeldaHeader>ID</CeldaHeader>
@@ -908,7 +588,7 @@
 									</Fila>
 
 									{#each productosAgregados as productoAgregado}
-										<Fila>
+										<Fila class="items-center">
 											<Celda class="flex justify-center px-2 sm:px-4">{productoAgregado.id}</Celda>
 											<Celda class="px-1 text-sm sm:px-4 sm:text-base">
 												{productoAgregado.nombre}
@@ -937,7 +617,7 @@
 													maximumFractionDigits: 0,
 												}).format(productoAgregado.cantidad * productoAgregado.valor)}
 											</Celda>
-											<Celda class="flex justify-center px-4 sm:px-0">
+											<Celda class="text-center">
 												<button
 													type="button"
 													on:click={() => {
@@ -950,12 +630,14 @@
 														);
 													}}
 												>
-													<Eliminar tamano={20}></Eliminar>
+													<Eliminar tamano={20} />
 												</button>
 											</Celda>
 										</Fila>
 									{/each}
 								</Tabla>
+							</div>
+							<div class="mt-3">
 								<label for="w3review" class="mt-4">
 									Total pedido:
 									{new Intl.NumberFormat('es-CO', {
@@ -980,75 +662,105 @@
 							name="w3review"
 							rows="4"
 							cols="50"
-						></textarea>
-
-						<Boton
-							variante="principal"
-							tipo="submit"
-							cargando={estadoActual.creandoPedido}
-							class="mt-4"
-						>
-							Crear pedido
-						</Boton>
+						/>
+						<div class="mt-4">
+							<Boton variante="principal" tipo="submit" cargando={estadoActual.creandoPedido}>
+								Crear pedido
+							</Boton>
+						</div>
 					</form>
 				</TarjetaBody>
 			</Tarjeta>
 		{/if}
 
 		{#if tabActivo === Tabs.consultarUltimosPedidos}
-			<Tarjeta class="sm:w-full">
-				<TarjetaHeader titulo={`Mis ultimos ${LIMITEULTIMOSPEDIDOS} pedidos`}></TarjetaHeader>
+			<Tarjeta class="max-h-[60vh] overflow-y-auto sm:w-full">
+				<TarjetaHeader
+					titulo={`Mis ultimos ${LIMITEULTIMOSPEDIDOS} pedidos`}
+					class="sticky top-0"
+				/>
 				<TarjetaBody>
 					{#if estadoActual.consultandoUltimosPedidos}
 						<PuntosCargando />
 					{:else if ultimosPedidos.length > 0}
 						<Tabla>
-							<Fila>
-								<CeldaHeader>ID</CeldaHeader>
-								<CeldaHeader>Estado</CeldaHeader>
-								<CeldaHeader>Fecha creado</CeldaHeader>
-								<CeldaHeader>Fecha entrega</CeldaHeader>
-								<CeldaHeader>Comentario</CeldaHeader>
-							</Fila>
-							{#each ultimosPedidos as pedido}
+							<thead class="sticky top-[62px] bg-white">
 								<Fila>
-									<Celda>{pedido.id}</Celda>
-
-									<Celda>
-										{#if pedido.estado === EstadosPedido.creado || pedido.estado === EstadosPedido.pendiente}
-											<div class="font-bold">{EstadosPedido.creado}</div>
-										{/if}
-										{#if pedido.estado === EstadosPedido.aprobado}
-											<div class="font-bold text-green-600">{EstadosPedido.aprobado}</div>
-										{/if}
-										{#if pedido.estado === EstadosPedido.rechazado}
-											<div class="font-bold text-red-500">{EstadosPedido.rechazado}</div>
-										{/if}
-									</Celda>
-
-									<Celda>{formatearFechaDDMMMYYYY(pedido.fechaCreado)}</Celda>
-									<Celda>{formatearFechaDDMMMYYYY(pedido.fechaEntrega)}</Celda>
-									<Celda>{pedido.comentario}</Celda>
-									<Celda>
-										<Boton
-											variante="link verdeFagar"
-											on:click={() => {
-												pedidoSeleccionado = pedido;
-												//console.log('pedidoSeleccionado', pedidoSeleccionado);
-											}}
-										>
-											Ver detalle
-										</Boton>
-									</Celda>
+									<CeldaHeader><div class="text-xs font-bold sm:text-base">ID</div></CeldaHeader>
+									<CeldaHeader>
+										<div class="text-xs font-bold sm:text-base">Estado</div>
+									</CeldaHeader>
+									<CeldaHeader>
+										<div class="text-xs font-bold sm:text-base">Fecha creado</div>
+									</CeldaHeader>
+									<CeldaHeader>
+										<div class="text-xs font-bold sm:text-base">Fecha entrega</div>
+									</CeldaHeader>
+									<div class="hidden sm:block">
+										<CeldaHeader>
+											<div class="text-xs font-bold sm:text-base">Comentario</div>
+										</CeldaHeader>
+									</div>
+									<CeldaHeader>
+										<div class="hidden text-base font-bold sm:block">Ver detalle</div>
+										<div class="text-xs sm:hidden">Ver</div>
+									</CeldaHeader>
 								</Fila>
-							{/each}
+							</thead>
+							<tbody>
+								{#each ultimosPedidos as pedido}
+									<Fila>
+										<Celda>{pedido.id}</Celda>
+										<Celda>
+											{#if pedido.estado === EstadosPedido.creado || pedido.estado === EstadosPedido.pendiente}
+												<div class="text-xs font-bold sm:text-base">{EstadosPedido.creado}</div>
+											{/if}
+											{#if pedido.estado === EstadosPedido.aprobado}
+												<div class="text-xs font-bold text-green-600 sm:text-base">
+													{EstadosPedido.aprobado}
+												</div>
+											{/if}
+											{#if pedido.estado === EstadosPedido.rechazado}
+												<div class="text-xs font-bold text-red-500 sm:text-base">
+													{EstadosPedido.rechazado}
+												</div>
+											{/if}
+										</Celda>
+
+										<Celda>
+											<div class="text-xs sm:text-base">
+												{formatearFechaDDMMMYYYY(pedido.fechaCreado)}
+											</div>
+										</Celda>
+										<Celda>
+											<div class="text-xs sm:text-base">
+												{formatearFechaDDMMMYYYY(pedido.fechaEntrega)}
+											</div>
+										</Celda>
+										<div class="hidden sm:block">
+											<Celda>
+												<div class="text-xs sm:text-base">{pedido.comentario}</div>
+											</Celda>
+										</div>
+										<Celda>
+											<Boton
+												variante="link verdeFagar"
+												on:click={() => (pedidoSeleccionado = pedido)}
+											>
+												<div class="hidden text-base sm:block">Ver detalle</div>
+												<div class="text-xs sm:hidden">Ver</div>
+											</Boton>
+										</Celda>
+									</Fila>
+								{/each}
+							</tbody>
 						</Tabla>
 					{:else}
 						<div class="text-center">No hay pedidos</div>
 					{/if}
 				</TarjetaBody>
 			</Tarjeta>
-			{#if pedidoSeleccionado.id > 0}
+			{#if pedidoSeleccionado}
 				<Tarjeta class="sm:w-full">
 					<TarjetaHeader titulo={`Detalles Pedido id ID ${pedidoSeleccionado?.id}`}></TarjetaHeader>
 					<TarjetaBody>
@@ -1107,46 +819,77 @@
 							</div>
 						</div>
 						<div class="w-full rounded-lg border py-4">
-							<Tabla>
-								<thead>
-									<Fila>
-										<CeldaHeader>Tipo</CeldaHeader>
-										<CeldaHeader>Producto</CeldaHeader>
-										<CeldaHeader>Cantidad</CeldaHeader>
-										<CeldaHeader>Total Unds</CeldaHeader>
-										<CeldaHeader>Valor</CeldaHeader>
-										<CeldaHeader>Total</CeldaHeader>
-									</Fila>
-								</thead>
-								<tbody>
-									{#each pedidoSeleccionado.detallePedido as detalle}
+							<div class="mb-4 overflow-y-auto rounded-lg pt-2">
+								<Tabla>
+									<thead>
 										<Fila>
-											<Celda>{detalle.tipo}</Celda>
-											<Celda>{productos.find((p) => detalle.idProducto === p.id)?.nombre}</Celda>
-											<Celda>{detalle.cantidad}</Celda>
-											<Celda>
-												{detalle.cantidadEnvases ? detalle.cantidad * detalle.cantidadEnvases : '-'}
-											</Celda>
-											<Celda>
-												{new Intl.NumberFormat('es-CO', {
-													style: 'currency',
-													currency: 'COP',
-													minimumFractionDigits: 0,
-													maximumFractionDigits: 0,
-												}).format(detalle.valor)}
-											</Celda>
-											<Celda>
-												{new Intl.NumberFormat('es-CO', {
-													style: 'currency',
-													currency: 'COP',
-													minimumFractionDigits: 0,
-													maximumFractionDigits: 0,
-												}).format(detalle.valor * detalle.cantidad)}
-											</Celda>
+											<CeldaHeader><div class="text-base font-bold">Tipo</div></CeldaHeader>
+											<CeldaHeader>
+												<div class="text-base font-bold">Producto</div>
+											</CeldaHeader>
+											<CeldaHeader>
+												<div class="hidden text-base font-bold sm:block">Cantidad</div>
+												<div class="text-xs sm:hidden">Cant</div>
+											</CeldaHeader>
+											<CeldaHeader>
+												<div class="text-xs font-bold sm:text-base">Total Unds</div>
+											</CeldaHeader>
+											<CeldaHeader>
+												<div class="text-xs font-bold sm:text-base">Valor</div>
+											</CeldaHeader>
+											<CeldaHeader>
+												<div class="text-xs font-bold sm:text-base">Total</div>
+											</CeldaHeader>
 										</Fila>
-									{/each}
-								</tbody>
-							</Tabla>
+									</thead>
+									<tbody>
+										{#each pedidoSeleccionado.detallePedido as detalle}
+											<Fila>
+												<Celda>
+													<div class="hidden text-base font-bold sm:block">{detalle.tipo}</div>
+													<div class="text-xs sm:hidden">{detalle.tipo.substring(0, 3)}</div>
+												</Celda>
+												<Celda>
+													<div class="hidden text-base sm:block">
+														{productos.find((p) => detalle.idProducto === p.id)?.nombre}
+													</div>
+													<div class="text-xs sm:hidden">
+														{productos.find((p) => detalle.idProducto === p.id)?.nombre}
+													</div>
+												</Celda>
+												<Celda><div class="text-xs sm:text-base">{detalle.cantidad}</div></Celda>
+												<Celda>
+													<div class="text-xs sm:text-base">
+														{detalle.cantidadEnvases
+															? detalle.cantidad * detalle.cantidadEnvases
+															: '-'}
+													</div>
+												</Celda>
+												<Celda>
+													<div class="text-xs sm:text-base">
+														{new Intl.NumberFormat('es-CO', {
+															style: 'currency',
+															currency: 'COP',
+															minimumFractionDigits: 0,
+															maximumFractionDigits: 0,
+														}).format(detalle.valor)}
+													</div>
+												</Celda>
+												<Celda>
+													<div class="text-xs sm:text-base">
+														{new Intl.NumberFormat('es-CO', {
+															style: 'currency',
+															currency: 'COP',
+															minimumFractionDigits: 0,
+															maximumFractionDigits: 0,
+														}).format(detalle.valor * detalle.cantidad)}
+													</div>
+												</Celda>
+											</Fila>
+										{/each}
+									</tbody>
+								</Tabla>
+							</div>
 						</div>
 						<div class="me-2 mt-2 flex w-full flex-col gap-2 rounded-lg border p-4">
 							<div class="flex flex-col sm:flex-row sm:justify-between">
@@ -1180,21 +923,264 @@
 				</Tarjeta>
 			{/if}
 		{/if}
-
-		<Boton
-			class="w-1/2 sm:w-1/4"
-			variante="rojo"
-			on:click={() => {
-				vendedorLogueado = { id: 0, nombre: '' };
-				productos = [];
-				productosFiltrados = [];
-				tabActivo = Tabs.ninguno;
-			}}
-		>
-			Cerrar sesión
-		</Boton>
 	{/if}
 </div>
+
+<!--Modal para productos del tipo PRINCIPAL-->
+<Modal
+	open={mostrarModalProductos}
+	onOpenChange={() => {
+		mostrarModalProductos = !mostrarModalProductos;
+	}}
+>
+	<ModalContent>
+		<ModalHeader>Seleccione producto tipo principal</ModalHeader>
+		{#if estadoActual.consultandoProductos}
+			<PuntosCargando />
+		{:else}
+			<div class="w-full px-4">
+				<div class="mt-4">
+					<input
+						class="input-texto mb-4 mt-4"
+						type="text"
+						placeholder="Filtrar productos"
+						bind:value={nombreProductoBuscar}
+					/>
+					<div class="mt-4 h-60 overflow-y-auto sm:h-96">
+						{#if productosFiltrados.length > 0}
+							<table class="w-full">
+								<thead class="sticky top-0 bg-white">
+									<tr>
+										<th class="px-4">ID</th>
+										<th class="px-4">Producto</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each productosFiltrados as producto}
+										<tr
+											class={`${productoSeleccionado?.id === producto.id ? 'bg-lime-300 hover:bg-lime-300' : 'hover:bg-neutral-200'}  py-2 text-slate-600 hover:cursor-pointer hover:rounded-lg `}
+											on:click={() => {
+												productoSeleccionado = {
+													id: producto.id,
+													nombre: producto.nombre,
+													cantidad: 0,
+													cantidadEnvases: producto.cantidadEnvases,
+													valor: 0,
+													tipo: TiposProductos.principal,
+													tipoAceite: producto.tipoAceite,
+													peso: producto.peso,
+												};
+
+												//mostrarModalProductos = false;
+												console.log('productoSeleccionado', productoSeleccionado);
+											}}
+										>
+											<td class="px-4">{producto.id}</td>
+											<td class="px-4">{producto.nombre}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{:else}
+							<div class="text-center">No hay coincidencias</div>
+						{/if}
+					</div>
+				</div>
+				{#if productoSeleccionado}
+					<label for="cantidad" class="input-label mt-4">Cantidad</label>
+					<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
+
+					<label for="valor" class="input-label mt-4">Valor unit (caja o bidon)</label>
+					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
+				{/if}
+				<div class="mt-4">
+					<Boton
+						variante="link verdeFagar"
+						on:click={() => {
+							//console.log('se agregará el producto', productoSeleccionado);
+							const productoYaAgregado = productosAgregados.some(
+								(producto) =>
+									producto.id === productoSeleccionado?.id &&
+									producto.tipo === TiposProductos.principal,
+							);
+							if (!productoYaAgregado && productoSeleccionado) {
+								if (productoSeleccionado.cantidad <= 0) {
+									Swal.fire({
+										icon: 'info',
+										title: 'Cantidad no válida',
+										text: 'La cantidad del producto debe ser mayor a 0',
+									});
+									return;
+								}
+								if (productoSeleccionado.valor <= 0) {
+									Swal.fire({
+										icon: 'info',
+										title: 'Valor no válido',
+										text: 'El valor del producto debe ser mayor a 0',
+									});
+									return;
+								}
+
+								if (!productoSeleccionado.cantidadEnvases) {
+									Swal.fire({
+										icon: 'info',
+										title: 'Cantidad de envases no válida',
+										text: 'El producto seleccionado no tiene parametrizado la cantidad de envases',
+									});
+									return;
+								}
+								productosAgregados = [...productosAgregados, productoSeleccionado];
+								// console.log('productosAgregados', productosAgregados);
+								productoSeleccionado = null;
+								mostrarModalProductos = false;
+							} else {
+								Swal.fire({
+									icon: 'info',
+									title: 'Producto ya agregado',
+									text: 'El producto seleccionado ya fue agregado al pedido',
+								});
+							}
+						}}
+					>
+						Agregar al pedido
+					</Boton>
+				</div>
+			</div>
+		{/if}
+		<ModalFooter>
+			<Boton variante="link rojo" on:click={() => (mostrarModalProductos = false)}>Cancelar</Boton>
+		</ModalFooter>
+	</ModalContent>
+</Modal>
+
+<!--Modal para productos del tipo externo-->
+<Modal
+	open={mostrarModalProductosExternos}
+	onOpenChange={() => {
+		mostrarModalProductosExternos = !mostrarModalProductosExternos;
+	}}
+>
+	<ModalContent>
+		<ModalHeader>Seleccione Producto Externo</ModalHeader>
+		{#if estadoActual.consultandoProductosExternos}
+			<PuntosCargando />
+		{:else}
+			<div class="w-full px-4">
+				<div class="mt-4">
+					<input
+						class="input-texto mb-4 mt-4"
+						type="text"
+						placeholder="Filtrar productos"
+						bind:value={nombreProductoExternoBuscar}
+					/>
+					<div class="mt-4 h-60 overflow-y-auto sm:h-96">
+						{#if productosExternosFiltrados.length > 0}
+							<table class="w-full">
+								<thead class="sticky top-0 bg-white">
+									<tr>
+										<th class="px-4">ID</th>
+										<th class="px-4">Producto</th>
+										<th class="px-4">Existencias</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each productosExternosFiltrados as producto}
+										<tr
+											class={`${productoSeleccionado?.id === producto.id ? 'bg-lime-300 hover:bg-lime-300' : 'hover:bg-neutral-200'}  py-2 text-slate-600 hover:cursor-pointer hover:rounded-lg `}
+											on:click={() => {
+												productoSeleccionado = {
+													id: producto.id,
+													nombre: producto.nombre,
+													cantidad: 0,
+													cantidadEnvases: null, //los productos externos no llevan cantidad de envases
+													valor: 0,
+													tipo: TiposProductos.externo,
+													tipoAceite: null,
+													peso: producto.peso,
+												};
+												console.log('productoSeleccionado', productoSeleccionado);
+											}}
+										>
+											<td class="px-4">{producto.id}</td>
+											<td class="px-4">{producto.nombre}</td>
+											<td class="px-4 text-center">{producto.existencias}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{:else}
+							<div class="text-center">No hay coincidencias</div>
+						{/if}
+					</div>
+				</div>
+				{#if productoSeleccionado}
+					<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
+					<input class="input-texto" bind:value={productoSeleccionado.cantidad} type="number" />
+
+					<label for="valor" class="input-label mt-4">Valor unit caja</label>
+					<input class="input-texto" bind:value={productoSeleccionado.valor} type="number" />
+				{/if}
+				<Boton
+					variante="link verdeFagar"
+					on:click={() => {
+						// console.log('se agregará el producto', productoSeleccionado);
+
+						//tiene que validarse el id pero tambien el tipo por que puede que se agregue un producto "PRINCIPAL" y "EXTERNO" con el mismo id
+						const productoExiste = productosAgregados.some(
+							(producto) =>
+								producto.id === productoSeleccionado?.id &&
+								producto.tipo === TiposProductos.externo,
+						);
+						if (!productoExiste && productoSeleccionado) {
+							if (productoSeleccionado.cantidad <= 0) {
+								Swal.fire({
+									icon: 'info',
+									title: 'Cantidad no válida',
+									text: 'La cantidad del producto debe ser mayor a 0',
+								});
+								return;
+							}
+							if (productoSeleccionado.valor <= 0) {
+								Swal.fire({
+									icon: 'info',
+									title: 'Valor no válido',
+									text: 'El valor del producto debe ser mayor a 0',
+								});
+								return;
+							}
+							productosAgregados = [...productosAgregados, productoSeleccionado];
+							console.log('productosAgregados', productosAgregados);
+							productoSeleccionado = {
+								id: 0,
+								nombre: '',
+								cantidad: 0,
+								cantidadEnvases: 0,
+								valor: 0,
+								tipo: '',
+								tipoAceite: '',
+								peso: 0,
+							};
+							mostrarModalProductosExternos = false;
+						} else {
+							Swal.fire({
+								icon: 'info',
+								title: 'Producto ya agregado',
+								text: 'El producto seleccionado ya fue agregado al pedido',
+							});
+						}
+					}}
+				>
+					Agregar al pedido
+				</Boton>
+			</div>
+		{/if}
+		<ModalFooter>
+			<Boton variante="link rojo" on:click={() => (mostrarModalProductosExternos = false)}>
+				Cancelar
+			</Boton>
+		</ModalFooter>
+	</ModalContent>
+</Modal>
 
 <style>
 </style>
