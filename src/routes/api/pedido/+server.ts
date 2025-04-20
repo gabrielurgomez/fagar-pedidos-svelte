@@ -156,8 +156,9 @@ export const POST: RequestHandler = async ({ request }) => {
 				},
 			});
 
-			let cuerpoHtml = `<b>Se notifica nuevo pedido</b><br>;
+			let cuerpoHtml = `<b>Se notifica nuevo pedido</b><br>
 			<br>
+			<b>ID:</b> ${nuevoPedido.id}<br>
 			<b>Vendedor</b>: ${vendedor ? vendedor.nombre : 'Vendedor no encontrado'}<br>
 			<b>Fecha de entrega:</b> ${fechaEntrega}<br>
 			<b>Comentario:</b> ${comentario ? comentario : 'Ninguno'}<br>
