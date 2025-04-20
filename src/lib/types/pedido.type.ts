@@ -1,9 +1,12 @@
 import type { pedidos, detallePedido } from '@prisma/client';
 
-export type Pedido = pedidos;
+export type Pedido = pedidos & {
+	detallePedido: detallePedido[];
+};
+
 export type PedidoConDetalleFormulario = Omit<
 	Pedido,
-	'idPedidoPendiente' | 'fechaEntrega' | 'fechaCreado' | 'creado'
+	'id' | 'idPedidoPendiente' | 'fechaEntrega' | 'fechaCreado' | 'creado' | 'motivoRechazo'
 > & {
 	fechaEntrega: Date | null;
 	fechaCreado: Date | null;

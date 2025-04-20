@@ -23,7 +23,6 @@ export const POST: RequestHandler = async ({ request }) => {
 			finalidad,
 			comentario,
 			productos,
-			nombreVendedor,
 		} = await request.json();
 
 		if (!idCliente) {
@@ -149,14 +148,21 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 		if (nuevoPedido) {
 			//se envia correo notificando
-			let cuerpoHtml = '<b>Se notifica nuevo pedido</b><br>';
-			cuerpoHtml += `<br>`;
-			cuerpoHtml += `<b>Vendedor</b>: ${nombreVendedor}<br>`;
-			cuerpoHtml += `<b>Fecha de entrega:</b> ${fechaEntrega}<br>`;
-			cuerpoHtml += `<b>Comentario:</b> ${comentario}<br>`;
-			cuerpoHtml += `<b>Cantidad de productos:</b> ${productos.length}<br>`;
-			cuerpoHtml += `<br>`;
-			cuerpoHtml += `<div>Para mas detalles, inicie sesión en la aplicacion pedidos.fagarcomercial.com</div>`;
+
+			//se busca el vendedor para poder obtener el nombre
+			const vendedor = await prisma.vendedores.findUnique({
+				where: {
+					id: idVendedor,
+				},
+			});
+
+			let cuerpoHtml = `<b>Se notifica nuevo pedido</b><br>;
+			<br>
+			<b>Vendedor</b>: ${vendedor ? vendedor.nombre : 'Vendedor no encontrado'}<br>
+			<b>Fecha de entrega:</b> ${fechaEntrega}<br>
+			<b>Comentario:</b> ${comentario ? comentario : 'Ninguno'}<br>
+			<b>Cantidad de productos:</b> ${productos.length}<br>
+			<br>`;
 
 			//se notifica por correo electronico a la empresa
 			try {

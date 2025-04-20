@@ -11,7 +11,11 @@
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
 	import type { ClienteSede, Cliente } from '$lib/types/cliente.type';
-	import type { PedidoConDetalleFormulario, FinalidadesPedido } from '$lib/types/pedido.type';
+	import type {
+		PedidoConDetalleFormulario,
+		FinalidadesPedido,
+		Pedido,
+	} from '$lib/types/pedido.type';
 	import { TiposProductos } from '$lib/constants/pedido.constant';
 	import type {
 		ProductoAgregadoAlPedido,
@@ -28,17 +32,6 @@
 		consultarUltimosPedidos,
 	}
 
-	let pedido = {
-		idCliente: 0,
-		clienteSedeCiudad: '',
-		clienteSedeDireccion: '',
-		fechaEntrega: '',
-		comentario: '',
-		idVendedor: 0,
-		estado: EstadosPedido.creado,
-		finalidad: '',
-	};
-
 	let estadoActual = {
 		validandoUsuario: false,
 		consultandoProductos: false,
@@ -52,13 +45,18 @@
 
 	let productos: ProductoConsultado[] = [];
 	let productosExternos: ProductoExternoConsultado[] = [];
-	let ultimosPedidos: PedidoConDetalleFormulario[] = [];
-	let pedidoSeleccionado: PedidoConDetalleFormulario | null = null;
+	let pedido: PedidoConDetalleFormulario | null = null;
+	let pedidoSeleccionado: Pedido | null = null;
+	let ultimosPedidos: Pedido[] = [];
+
+	let clienteSeleccionado = {
+		id: 0,
+		razonSocial: '',
+		sedesClientes: [] as ClienteSede[],
+	};
 
 	let tabActivo: Tabs = Tabs.crearPedido;
-
 	let vendedorLogueado: VendedorLogueado | null = null;
-
 	let clientes: Cliente[] = [];
 
 	const consultarClientesDelVendedor = async (idVendedor: number) => {
@@ -101,11 +99,6 @@
 		}
 	};
 
-	let clienteSeleccionado = {
-		id: 0,
-		razonSocial: '',
-		sedesClientes: [] as ClienteSede[],
-	};
 	let sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 
 	const consultarProductos = async () => {
@@ -138,22 +131,13 @@
 		}
 	};
 
-	// let productoSeleccionadoDefecto = {
-	// 	id: 0,
-	// 	nombre: '',
-	// 	cantidad: 0,
-	// 	cantidadEnvases: 0,
-	// 	valor: 0,
-	// 	tipo: '',
-	// 	tipoAceite: '',
-	// 	peso: 0,
-	// };
-
 	let productoSeleccionado: ProductoAgregadoAlPedido | null = null;
-
 	let productosAgregados: ProductoAgregadoAlPedido[] = [];
 
 	const validarUsuario = async () => {
+		//por si habia un pedido hecho y se reintenta iniciar sesion
+		pedido = null;
+
 		if (!usuario.numeroCedula) {
 			Swal.fire({ icon: 'info', title: 'Valide datos', text: 'Debe digitar el número de cedula' });
 			return;
@@ -182,14 +166,22 @@
 			let clientesEncontrados = await consultarClientesDelVendedor(infoVendedor.id);
 			if (clientesEncontrados.length > 0) {
 				clientes = clientesEncontrados;
-
 				vendedorLogueado = {
 					id: infoVendedor.id,
 					nombre: infoVendedor.nombre,
 				};
-
-				pedido.idVendedor = infoVendedor.id;
-
+				pedido = {
+					idVendedor: infoVendedor.id,
+					idCliente: 0,
+					fechaEntrega: null,
+					fechaCreado: null,
+					finalidad: 'SELECCIONE',
+					comentario: '',
+					clienteSedeCiudad: '',
+					clienteSedeDireccion: '',
+					estado: EstadosPedido.creado,
+					detallePedido: [],
+				};
 				//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
 				tabActivo = Tabs.crearPedido;
 				consultarProductos();
@@ -213,19 +205,14 @@
 	};
 
 	const crearPedido = async () => {
-		if (!vendedorLogueado) {
-			alert(
-				'Favor avisar a sistemas, no se está capturando correctamente el usuario logueado para enviar al backend',
-			);
-			return;
-		}
-
-		if (!pedido.idVendedor) {
+		//al validarse el usuario se asignó el idVendedor a pedido por lo cual pedido ya no es null en este momento
+		if (!pedido || !pedido.idVendedor) {
 			alert(
 				'Favor avisar a sistemas, no se está capturando correctamente el idVendedor del usuario logueado para enviar al backend',
 			);
 			return;
 		}
+
 		if (!pedido.fechaEntrega) {
 			Swal.fire({
 				icon: 'info',
@@ -283,27 +270,31 @@
 			body: JSON.stringify({
 				...pedido,
 				productos: productosAgregados,
-				nombreVendedor: vendedorLogueado.nombre,
 			}),
 		});
+
 		switch (rtaPedidoJson.status) {
 			case 201: {
 				let rta = await rtaPedidoJson.json();
+
 				Swal.fire({
 					icon: 'success',
 					title: 'Creado',
 					text: rta.message,
 				});
 				productosAgregados = [];
+
 				pedido = {
+					idVendedor: pedido.idVendedor,
 					idCliente: 0,
-					idVendedor: vendedorLogueado.id,
+					fechaEntrega: null,
+					fechaCreado: null,
+					finalidad: 'SELECCIONE',
+					comentario: '',
 					clienteSedeCiudad: '',
 					clienteSedeDireccion: '',
-					fechaEntrega: '',
-					comentario: '',
 					estado: EstadosPedido.creado,
-					finalidad: 'SELECCIONE',
+					detallePedido: [],
 				};
 
 				finalidadPedidoSeleccionado = 'SELECCIONE';
@@ -404,7 +395,11 @@
 			class="w-1/2 sm:w-1/4"
 			variante="link rojo"
 			on:click={() => {
-				vendedorLogueado = { id: 0, nombre: '' };
+				usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
+				vendedorLogueado = null;
+				pedido = null;
+				pedidoSeleccionado = null;
+				clientes = [];
 				productos = [];
 				productosFiltrados = [];
 				tabActivo = Tabs.ninguno;
@@ -439,7 +434,8 @@
 			</div>
 		</div>
 
-		{#if tabActivo === Tabs.crearPedido}
+		<!-- Cuando se validó el vendedor, se asigna el idVendedor a pedido por lo cual pedido ya no es null -->
+		{#if tabActivo === Tabs.crearPedido && pedido?.idVendedor}
 			<Tarjeta>
 				<TarjetaHeader titulo="Crear pedido" />
 				<TarjetaBody>
@@ -647,7 +643,7 @@
 			</Tarjeta>
 		{/if}
 
-		{#if tabActivo === Tabs.consultarUltimosPedidos}
+		{#if tabActivo === Tabs.consultarUltimosPedidos && pedido?.idVendedor}
 			<Tarjeta class="max-h-[60vh] overflow-y-auto sm:w-full">
 				<TarjetaHeader
 					titulo={`Mis ultimos ${LIMITEULTIMOSPEDIDOS} pedidos`}
