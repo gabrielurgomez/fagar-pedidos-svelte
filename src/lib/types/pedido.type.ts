@@ -13,4 +13,5 @@ export type PedidoConDetalleFormulario = Omit<
 	detallePedido: detallePedido[];
 };
 
-export type FinalidadesPedido = 'SELECCIONE' | 'FACTURA' | 'PROFORMA';
+export type FinalidadesPedido = 'COTIZACION' | 'PROFORMA';
+export type FinalidadesPedidoConSeleccione = 'SELECCIONE' | FinalidadesPedido;

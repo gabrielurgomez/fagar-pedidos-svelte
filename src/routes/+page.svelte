@@ -13,7 +13,7 @@
 	import type { ClienteSede, Cliente } from '$lib/types/cliente.type';
 	import type {
 		PedidoConDetalleFormulario,
-		FinalidadesPedido,
+		FinalidadesPedidoConSeleccione,
 		Pedido,
 	} from '$lib/types/pedido.type';
 	import { TiposProductos } from '$lib/constants/pedido.constant';
@@ -339,8 +339,12 @@
 		return producto.nombre.toLowerCase().includes(nombreProductoExternoBuscar.toLowerCase());
 	});
 
-	let finalidadesPedido: FinalidadesPedido[] = ['SELECCIONE', 'FACTURA', 'PROFORMA'];
-	let finalidadPedidoSeleccionado: FinalidadesPedido = 'SELECCIONE';
+	let finalidadesPedido: FinalidadesPedidoConSeleccione[] = [
+		'SELECCIONE',
+		'COTIZACION',
+		'PROFORMA',
+	];
+	let finalidadPedidoSeleccionado: FinalidadesPedidoConSeleccione = 'SELECCIONE';
 
 	let clienteBuscar = '';
 	let touchedInputCliente = false;
