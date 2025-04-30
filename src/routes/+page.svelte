@@ -181,6 +181,7 @@
 					clienteSedeDireccion: '',
 					estado: EstadosPedido.creado,
 					detallePedido: [],
+					porcentajeIVA: null,
 				};
 				//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
 				tabActivo = Tabs.crearPedido;
@@ -295,6 +296,7 @@
 					clienteSedeDireccion: '',
 					estado: EstadosPedido.creado,
 					detallePedido: [],
+					porcentajeIVA: null,
 				};
 
 				finalidadPedidoSeleccionado = 'SELECCIONE';

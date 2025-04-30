@@ -1,4 +1,3 @@
-//import { error } from '@sveltejs/kit';
 import { type RequestHandler } from '@sveltejs/kit';
 import { PrismaClient } from '@prisma/client';
 import { obtenerFechaYHoraActual, formetearFechaToISO8601 } from '$lib/utils/fechas';
@@ -6,6 +5,8 @@ import { transporterSistemas } from '$lib/server/nodemailer';
 import { env } from '$env/dynamic/private';
 import type { ProductoEnPedido } from '$lib/types/producto.type';
 import { EstadosPedido, TiposProductos } from '$lib/constants/pedido.constant';
+import { PORCENTAJE_IVA } from '$lib/constants/pedido.constant';
+import { FinalidadesPedido } from '$lib/constants/pedido.constant';
 
 const prisma = new PrismaClient();
 
@@ -143,6 +144,7 @@ export const POST: RequestHandler = async ({ request }) => {
 						valor: p.valor,
 					})),
 				},
+				porcentajeIVA: finalidad === FinalidadesPedido.cotizacion ? null : PORCENTAJE_IVA,
 				creado: fechaHoraActualISO8601_UTC,
 			},
 		});

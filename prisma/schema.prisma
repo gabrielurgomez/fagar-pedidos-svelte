@@ -12,7 +12,7 @@ model vendedores {
   cedula                   String    @unique(map: "cedula") @db.VarChar(20)
   fechaExpedicionDocumento DateTime  @db.Date
   nombre                   String    @db.VarChar(100)
-  email                    String    @db.VarChar(50)
+  email                    String    @unique(map: "email") @db.VarChar(50)
   pedidos                  pedidos[]
 }
 
@@ -48,6 +48,7 @@ model pedidos {
   finalidad            String   @db.VarChar(50)
   estado               String   @db.VarChar(50)
   motivoRechazo        String?  @db.VarChar(500)
+  porcentajeIVA        Float?
   comentario           String   @db.VarChar(100)
   idPedidoPendiente    Int?     @unique
   creado               DateTime @db.DateTime(0)
@@ -56,9 +57,21 @@ model pedidos {
   cliente       clientes        @relation(fields: [idCliente], references: [id])
   vendedor      vendedores      @relation(fields: [idVendedor], references: [id])
   detalleCargue detalleCargue?
+  documento     documentos?
 
   @@index([idCliente], map: "pedidos_idCliente_fkey")
   @@index([idVendedor], map: "pedidos_idVendedor_fkey")
+}
+
+model documentos {
+  id                  Int      @id @default(autoincrement())
+  idPedido            Int
+  porcentajeRetencion Float?
+  creado              DateTime @db.DateTime(0)
+  pedido              pedidos  @relation(fields: [idPedido], references: [id], onDelete: Cascade)
+
+  @@unique([idPedido])
+  @@index([idPedido], map: "documentos_idPedido_fkey")
 }
 
 model clientes {
@@ -90,6 +103,7 @@ model detalleClientesSedes {
   id        Int      @id @default(autoincrement())
   idCliente Int
   direccion String   @db.VarChar(100)
+  telefono  String   @db.VarChar(20)
   ciudad    String   @db.VarChar(100)
   cliente   clientes @relation(fields: [idCliente], references: [id])
 
@@ -97,18 +111,23 @@ model detalleClientesSedes {
 }
 
 model cargues {
-  id            Int       @id @default(autoincrement())
-  codigo        String?   @unique(map: "codigo") @db.VarChar(20)
-  fecha         DateTime? @db.Date
-  idConductor   Int?
-  arlConductor  String?   @db.VarChar(150)
-  epsConductor  String?   @db.VarChar(150)
-  placaVehiculo String?   @db.VarChar(20)
-  observaciones String?   @db.VarChar(500)
-  fechaCreado   DateTime  @db.Date
-  creado        DateTime  @db.DateTime(0)
+  id               Int       @id @default(autoincrement())
+  codigo           String?   @unique(map: "codigo") @db.VarChar(20)
+  idVehiculo       Int?
+  idConductor      Int?
+  arlConductor     String?   @db.VarChar(150)
+  epsConductor     String?   @db.VarChar(150)
+  fecha            DateTime? @db.Date
+  numeroGuia       String?   @db.VarChar(50)
+  numeroLote       String?   @db.VarChar(50)
+  fechaVencimiento DateTime? @db.Date
+  fechaEnvasado    DateTime? @db.Date
+  fechaCreado      DateTime  @db.Date
+  observaciones    String?   @db.VarChar(500)
+  creado           DateTime  @db.DateTime(0)
 
   conductor     conductores?    @relation(fields: [idConductor], references: [id])
+  vehiculo      vehiculos?      @relation(fields: [idVehiculo], references: [id])
   detalleCargue detalleCargue[]
 }
 
@@ -134,7 +153,9 @@ model conductores {
 }
 
 model vehiculos {
-  id     Int    @id @default(autoincrement())
-  placa  String @unique(map: "placa") @db.VarChar(20)
-  estado String @db.VarChar(50)
+  id      Int       @id @default(autoincrement())
+  placa   String    @unique(map: "placa") @db.VarChar(20)
+  tipo    String    @db.VarChar(100)
+  estado  String    @db.VarChar(50)
+  cargues cargues[]
 }

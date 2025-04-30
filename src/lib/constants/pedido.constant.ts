@@ -16,4 +16,11 @@ export enum TiposProductos {
 	externo = 'EXTERNO',
 }
 
+export const PORCENTAJE_IVA = 19;
+
 export const LIMITEULTIMOSPEDIDOS = 300;
+
+export const FinalidadesPedido = {
+	cotizacion: 'COTIZACION',
+	proforma: 'PROFORMA',
+};
