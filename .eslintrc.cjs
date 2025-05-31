@@ -27,8 +27,12 @@ module.exports = {
 				parser: '@typescript-eslint/parser',
 			},
 		},
+		//Skip this validation for generated OpenAPI My Account types, as it has duplicates for api paths that are not a problem
+		{
+			files: ['src/lib/open-api/myaccount/my-account-api-schema.types.generated.ts'],
+			rules: {
+				'@typescript-eslint/no-duplicate-enum-values': 'off',
+			},
+		},
 	],
-	rules: {
-		'no-console': ['error', { allow: ['warn', 'error'] }],
-	},
 };

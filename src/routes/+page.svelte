@@ -10,6 +10,7 @@
 	import IconoGuardar from '$lib/icons/Guardar.svelte';
 	import PuntosCargando from '$lib/components/PuntosCargando.svelte';
 	import Eliminar from '$lib/icons/Eliminar.svelte';
+	import Lista from '$lib/icons/Lista.svelte';
 	import type { ClienteSede, Cliente } from '$lib/types/cliente.type';
 	import type {
 		PedidoConDetalleFormulario,
@@ -25,6 +26,17 @@
 	import { EstadosPedido, LIMITEULTIMOSPEDIDOS } from '$lib/constants/pedido.constant';
 	import { formatearFechaDDMMMYYYY } from '$lib/utils/fechas';
 	import type { VendedorLogueado } from '$lib/types/vendedor.type';
+	import { nombresCookies } from '$lib/constants/cookie.constant';
+
+	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
+	export let data;
+
+	if (data.numeroCedulaVendedor && data.fechaExpedicionDocumentoVendedor) {
+		usuario = {
+			numeroCedula: data.numeroCedulaVendedor,
+			fechaExpedicionDocumento: data.fechaExpedicionDocumentoVendedor,
+		};
+	}
 
 	enum Tabs {
 		ninguno,
@@ -40,8 +52,6 @@
 		consultandoProductosExternos: false,
 		consultandoUltimosPedidos: false,
 	};
-
-	let usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
 
 	let productos: ProductoConsultado[] = [];
 	let productosExternos: ProductoExternoConsultado[] = [];
@@ -159,48 +169,72 @@
 				headers: { 'Content-Type': 'application/json' },
 			},
 		);
+		console.log('rtaJson', rtaJson);
+		switch (rtaJson.status) {
+			case 200: {
+				const rta = await rtaJson.json();
+				let vendedor = rta.vendedor;
 
-		if (rtaJson.status === 200) {
-			const infoVendedor = await rtaJson.json();
-
-			let clientesEncontrados = await consultarClientesDelVendedor(infoVendedor.id);
-			if (clientesEncontrados.length > 0) {
-				clientes = clientesEncontrados;
-				vendedorLogueado = {
-					id: infoVendedor.id,
-					nombre: infoVendedor.nombre,
-				};
-				pedido = {
-					idVendedor: infoVendedor.id,
-					idCliente: 0,
-					fechaEntrega: null,
-					fechaCreado: null,
-					finalidad: 'SELECCIONE',
-					comentario: '',
-					clienteSedeCiudad: '',
-					clienteSedeDireccion: '',
-					estado: EstadosPedido.creado,
-					detallePedido: [],
-					porcentajeIVA: null,
-				};
-				//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
-				tabActivo = Tabs.crearPedido;
-				consultarProductos();
-				consultarProductosExternos();
-			} else {
+				let clientesEncontrados = await consultarClientesDelVendedor(vendedor.id);
+				if (clientesEncontrados.length > 0) {
+					clientes = clientesEncontrados;
+					vendedorLogueado = {
+						id: vendedor.id,
+						nombre: vendedor.nombre,
+					};
+					pedido = {
+						idVendedor: vendedor.id,
+						idCliente: 0,
+						fechaEntrega: null,
+						fechaCreado: null,
+						finalidad: 'SELECCIONE',
+						comentario: '',
+						clienteSedeCiudad: '',
+						clienteSedeDireccion: '',
+						estado: EstadosPedido.creado,
+						detallePedido: [],
+						porcentajeIVA: null,
+					};
+					//como ya se validó el usuario, se envia a consultar productos pues de una vez queda lista la card para crear producto
+					tabActivo = Tabs.crearPedido;
+					consultarProductos();
+					consultarProductosExternos();
+				} else {
+					Swal.fire({
+						icon: 'info',
+						title: 'Clientes no encontrados',
+						text: `Los datos de inicio de sesión son válidos, pero el usuario de cedula ${usuario.numeroCedula} que acaba de digitar no tiene clientes asignados, favor solicite que le asignen clientes`,
+					});
+				}
+				break;
+			}
+			case 400: {
+				let rtaError = await rtaJson.json();
+				Swal.fire({
+					icon: 'error',
+					title: 'Error 400',
+					text: rtaError.message,
+				});
+				break;
+			}
+			case 404: {
+				const rtaError404 = await rtaJson.json();
 				Swal.fire({
 					icon: 'info',
-					title: 'Clientes no encontrados',
-					text: `Los datos de inicio de sesión son válidos, pero el usuario de cedula ${usuario.numeroCedula} que acaba de digitar no tiene clientes asignados, favor solicite que le asignen clientes`,
+					title: 'Usuario no encontrado',
+					text: rtaError404.message,
 				});
+				break;
 			}
-		}
-		if (rtaJson.status === 404) {
-			Swal.fire({
-				icon: 'info',
-				title: 'Usuario no encontrado',
-				text: `El usuario de cedula ${usuario.numeroCedula} con fecha de expedición ${usuario.fechaExpedicionDocumento} no se encuentra registrado en la base de datos`,
-			});
+			case 500: {
+				let rtaError = await rtaJson.json();
+				Swal.fire({
+					icon: 'error',
+					title: 'Error 500',
+					text: rtaError.error,
+				});
+				break;
+			}
 		}
 		estadoActual.validandoUsuario = false;
 	};
@@ -366,6 +400,31 @@
 
 	$: mostrarModalProductos = false;
 	$: mostrarModalProductosExternos = false;
+
+	const cerrarSesion = async () => {
+		//se envia a eliminar la cookie que recuerda el numero de cedula y la fecha de expedicion del documento
+		const rtaJson = await fetch(`/api/cookie/${nombresCookies.datosUsuarioLogueado}`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (rtaJson.status !== 200) {
+			Swal.fire({
+				icon: 'error',
+				title: 'Error',
+				text: 'No se pudo cerrar la sesión',
+			});
+		}
+
+		usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
+		vendedorLogueado = null;
+		pedido = null;
+		pedidoSeleccionado = null;
+		clientes = [];
+		productos = [];
+		productosFiltrados = [];
+		tabActivo = Tabs.ninguno;
+	};
 </script>
 
 <svelte:head>
@@ -374,10 +433,11 @@
 </svelte:head>
 
 <div class="contenedorPrincipal">
-	<img alt="logo" src={logo} class="h-25 sm:h-45 w-40 sm:w-80" />
 	{#if !vendedorLogueado}
+		<img alt="logo" src={logo} class="h-25 sm:h-45 w-40 sm:w-80" />
+		<h1 class="text-3xl font-bold text-green-700">Pedidos</h1>
 		<Tarjeta class="lg:w-1/3">
-			<TarjetaHeader titulo={'Validación de usuario'} />
+			<TarjetaHeader titulo="Validación de usuario" />
 			<TarjetaBody>
 				<form class="flex w-full flex-col" on:submit|preventDefault={validarUsuario}>
 					<label for="usuario" class="input-label">Numero cedula</label>
@@ -396,36 +456,27 @@
 			</TarjetaBody>
 		</Tarjeta>
 	{:else}
-		<h1 class="text-center">{vendedorLogueado.nombre}</h1>
-		<Boton
-			class="w-1/2 sm:w-1/4"
-			variante="link rojo"
-			on:click={() => {
-				usuario = { numeroCedula: '', fechaExpedicionDocumento: '' };
-				vendedorLogueado = null;
-				pedido = null;
-				pedidoSeleccionado = null;
-				clientes = [];
-				productos = [];
-				productosFiltrados = [];
-				tabActivo = Tabs.ninguno;
-			}}
-		>
-			Cerrar sesión
-		</Boton>
-		<div class="fila-1columna mt-4">
-			<div class="contenedorTabs">
-				<div class={`tab ${tabActivo === Tabs.crearPedido ? 'tab-activo' : ''}`}>
-					<IconoGuardar tamano={20} />
-					<button
-						on:click={() => {
-							tabActivo = Tabs.crearPedido;
-							consultarProductos();
-						}}
-					>
-						Crear
-					</button>
-				</div>
+		<div class="flex w-full items-center justify-between border-b px-3 sm:gap-4 sm:px-20 xl:gap-8">
+			<img alt="logo" src={logo} class="sm:w-50 w-40" />
+			<div class="flex flex-col items-center">
+				<div class="font-bold text-green-700 sm:text-2xl">{vendedorLogueado.nombre}</div>
+				<Boton variante="link rojo" on:click={cerrarSesion}>Cerrar sesión</Boton>
+			</div>
+		</div>
+		<div>
+			<div class={`tab ${tabActivo === Tabs.crearPedido ? 'tab-activo' : ''}`}>
+				<IconoGuardar tamano={20} />
+				<button
+					on:click={() => {
+						tabActivo = Tabs.crearPedido;
+						consultarProductos();
+					}}
+				>
+					Crear Pedido
+				</button>
+			</div>
+			<div class={`tab ${tabActivo === Tabs.consultarUltimosPedidos ? 'tab-activo' : ''}`}>
+				<Lista tamano={20} />
 				<button
 					on:click={() => {
 						tabActivo = Tabs.consultarUltimosPedidos;
@@ -433,64 +484,38 @@
 						pedidoSeleccionado = null;
 						consultarUltimosPedidos();
 					}}
-					class={`tab ${tabActivo === Tabs.consultarUltimosPedidos ? 'tab-activo' : ''}`}
 				>
 					Ultimos Pedidos
 				</button>
 			</div>
 		</div>
-
-		<!-- Cuando se validó el vendedor, se asigna el idVendedor a pedido por lo cual pedido ya no es null -->
-		{#if tabActivo === Tabs.crearPedido && pedido?.idVendedor}
-			<Tarjeta>
-				<TarjetaHeader titulo="Crear pedido" />
-				<TarjetaBody>
-					<form method="POST" class="w-full" on:submit|preventDefault={crearPedido}>
-						<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
-						<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
-						<label for="Seleccione cliente" class="input-label">Seleccione cliente</label>
-						<Combobox
-							items={clientesFiltrados}
-							selected={{ value: clienteSeleccionado.id, label: clienteSeleccionado.razonSocial }}
-						>
-							<ComboboxInput placeholder="Seleccione..." />
-							<ComboboxContent>
-								{#each clientesFiltrados as cliente (cliente.id)}
-									<ComboboxItem
-										value={cliente.id}
-										label={cliente.razonSocial}
-										on:click={() => {
-											sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
-											clienteSeleccionado = {
-												id: cliente.id,
-												razonSocial: cliente.razonSocial,
-												sedesClientes: cliente.sedes,
-											};
-										}}
-									/>
-								{:else}
-									<span class="block px-5 py-2 text-sm text-muted-foreground">
-										No results found
-									</span>
-								{/each}
-							</ComboboxContent>
-						</Combobox>
-						{#if clienteSeleccionado.sedesClientes.length > 0}
-							<label for="Seleccione sede del cliente" class="input-label">
-								Seleccione sede del cliente
-							</label>
+		<div class="w-full px-3 sm:px-20">
+			<!-- Cuando se validó el vendedor, se asigna el idVendedor a pedido por lo cual pedido ya no es null -->
+			{#if tabActivo === Tabs.crearPedido && pedido?.idVendedor}
+				<Tarjeta>
+					<TarjetaHeader titulo="Crear pedido" />
+					<TarjetaBody>
+						<form method="POST" class="w-full" on:submit|preventDefault={crearPedido}>
+							<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
+							<input bind:value={pedido.fechaEntrega} class="input-texto" type="date" />
+							<label for="Seleccione cliente" class="input-label">Seleccione cliente</label>
 							<Combobox
-								items={sedesFiltrados}
-								selected={{ value: sedeSeleccionada.id, label: sedeSeleccionada.direccion }}
+								items={clientesFiltrados}
+								selected={{ value: clienteSeleccionado.id, label: clienteSeleccionado.razonSocial }}
 							>
 								<ComboboxInput placeholder="Seleccione..." />
 								<ComboboxContent>
-									{#each clienteSeleccionado.sedesClientes as sede}
+									{#each clientesFiltrados as cliente (cliente.id)}
 										<ComboboxItem
-											value={sede.id}
-											label={`${sede.ciudad} - ${sede.direccion}`}
+											value={cliente.id}
+											label={cliente.razonSocial}
 											on:click={() => {
-												sedeSeleccionada = sede;
+												sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
+												clienteSeleccionado = {
+													id: cliente.id,
+													razonSocial: cliente.razonSocial,
+													sedesClientes: cliente.sedes,
+												};
 											}}
 										/>
 									{:else}
@@ -500,405 +525,436 @@
 									{/each}
 								</ComboboxContent>
 							</Combobox>
-						{/if}
-						<label for="Seleccione cliente" class="input-label">Seleccione finalidad pedido</label>
-						<Combobox
-							items={finalidadesPedido}
-							selected={{
-								value: finalidadPedidoSeleccionado,
-								label: finalidadPedidoSeleccionado,
-							}}
-						>
-							<ComboboxInput placeholder="Seleccione..." />
-							<ComboboxContent>
-								{#each finalidadesPedido as finalidadPedido}
-									<ComboboxItem
-										value={finalidadPedido}
-										label={finalidadPedido}
-										on:click={() => {
-											finalidadPedidoSeleccionado = finalidadPedido;
-										}}
-									/>
-								{:else}
-									<span class="block px-5 py-2 text-sm text-muted-foreground">
-										No results found
-									</span>
-								{/each}
-							</ComboboxContent>
-						</Combobox>
-						<div class="mt-4 flex flex-col items-start gap-2">
-							<Boton
-								variante="link verdeFagar"
-								on:click={() => {
-									productoSeleccionado = null;
-									mostrarModalProductos = true;
-									consultarProductos();
-								}}
-							>
-								Agregar producto tipo principal
-							</Boton>
-							<Boton
-								variante="link verdeFagar"
-								on:click={() => {
-									productoSeleccionado = null;
-									mostrarModalProductosExternos = true;
-									consultarProductosExternos();
-								}}
-							>
-								Agregar producto tipo externo
-							</Boton>
-						</div>
-						<br />
-						<!--tabla que muestra los productos agregados-->
-						{#if productosAgregados.length > 0}
-							<div class="mb-4 overflow-y-auto rounded-lg pt-2">
-								<Tabla>
-									<Fila>
-										<CeldaHeader>ID</CeldaHeader>
-										<CeldaHeader>Producto</CeldaHeader>
-										<CeldaHeader>Tipo</CeldaHeader>
-										<CeldaHeader>Cant</CeldaHeader>
-										<CeldaHeader>Valor</CeldaHeader>
-										<CeldaHeader>Total</CeldaHeader>
-										<CeldaHeader>Quitar</CeldaHeader>
-									</Fila>
-
-									{#each productosAgregados as productoAgregado}
-										<Fila class="items-center">
-											<Celda class="flex justify-center px-2 sm:px-4">{productoAgregado.id}</Celda>
-											<Celda class="px-1 text-sm sm:px-4 sm:text-base">
-												{productoAgregado.nombre}
-											</Celda>
-											<Celda class="px-1 text-sm sm:px-4 sm:text-base">
-												{productoAgregado.tipo.charAt(0).toUpperCase() +
-													productoAgregado.tipo.slice(1)}
-											</Celda>
-											<Celda class="px-1 text-start sm:px-4 sm:text-center">
-												{productoAgregado.cantidad}
-											</Celda>
-
-											<Celda class="px-1 text-start sm:px-4 sm:text-center">
-												{new Intl.NumberFormat('es-CO', {
-													style: 'currency',
-													currency: 'COP',
-													minimumFractionDigits: 0,
-													maximumFractionDigits: 0,
-												}).format(productoAgregado.valor)}
-											</Celda>
-											<Celda class="px-1 text-start sm:px-4 sm:text-center">
-												{new Intl.NumberFormat('es-CO', {
-													style: 'currency',
-													currency: 'COP',
-													minimumFractionDigits: 0,
-													maximumFractionDigits: 0,
-												}).format(productoAgregado.cantidad * productoAgregado.valor)}
-											</Celda>
-											<Celda class="text-center">
-												<button
-													type="button"
-													on:click={() => {
-														productosAgregados = productosAgregados.filter(
-															(producto) =>
-																!(
-																	producto.id === productoAgregado.id &&
-																	producto.tipo === productoAgregado.tipo
-																),
-														);
-													}}
-												>
-													<Eliminar tamano={20} />
-												</button>
-											</Celda>
-										</Fila>
-									{/each}
-								</Tabla>
-							</div>
-							<div class="mt-3">
-								<label for="w3review" class="mt-4">
-									Total pedido:
-									{new Intl.NumberFormat('es-CO', {
-										style: 'currency',
-										currency: 'COP',
-										minimumFractionDigits: 0,
-										maximumFractionDigits: 0,
-									}).format(
-										productosAgregados.reduce(
-											(acc, producto) => acc + producto.cantidad * producto.valor,
-											0,
-										),
-									)}
+							{#if clienteSeleccionado.sedesClientes.length > 0}
+								<label for="Seleccione sede del cliente" class="input-label">
+									Seleccione sede del cliente
 								</label>
+								<Combobox
+									items={sedesFiltrados}
+									selected={{ value: sedeSeleccionada.id, label: sedeSeleccionada.direccion }}
+								>
+									<ComboboxInput placeholder="Seleccione..." />
+									<ComboboxContent>
+										{#each clienteSeleccionado.sedesClientes as sede}
+											<ComboboxItem
+												value={sede.id}
+												label={`${sede.ciudad} - ${sede.direccion}`}
+												on:click={() => {
+													sedeSeleccionada = sede;
+												}}
+											/>
+										{:else}
+											<span class="block px-5 py-2 text-sm text-muted-foreground">
+												No results found
+											</span>
+										{/each}
+									</ComboboxContent>
+								</Combobox>
+							{/if}
+							<label for="Seleccione cliente" class="input-label">
+								Seleccione finalidad pedido
+							</label>
+							<Combobox
+								items={finalidadesPedido}
+								selected={{
+									value: finalidadPedidoSeleccionado,
+									label: finalidadPedidoSeleccionado,
+								}}
+							>
+								<ComboboxInput placeholder="Seleccione..." />
+								<ComboboxContent>
+									{#each finalidadesPedido as finalidadPedido}
+										<ComboboxItem
+											value={finalidadPedido}
+											label={finalidadPedido}
+											on:click={() => {
+												finalidadPedidoSeleccionado = finalidadPedido;
+											}}
+										/>
+									{:else}
+										<span class="block px-5 py-2 text-sm text-muted-foreground">
+											No results found
+										</span>
+									{/each}
+								</ComboboxContent>
+							</Combobox>
+							<div class="mt-4 flex flex-col items-start gap-2">
+								<Boton
+									variante="link verdeFagar"
+									on:click={() => {
+										productoSeleccionado = null;
+										mostrarModalProductos = true;
+										consultarProductos();
+									}}
+								>
+									Agregar producto tipo principal
+								</Boton>
+								<Boton
+									variante="link verdeFagar"
+									on:click={() => {
+										productoSeleccionado = null;
+										mostrarModalProductosExternos = true;
+										consultarProductosExternos();
+									}}
+								>
+									Agregar producto tipo externo
+								</Boton>
 							</div>
-						{/if}
-						<label for="w3review" class="mt-4">Comentarios generales:</label>
-						<textarea
-							bind:value={pedido.comentario}
-							class="input-texto mt-2"
-							id="w3review"
-							name="w3review"
-							rows="4"
-							cols="50"
-						/>
-						<div class="mt-4">
-							<Boton variante="principal" tipo="submit" cargando={estadoActual.creandoPedido}>
-								Crear pedido
-							</Boton>
-						</div>
-					</form>
-				</TarjetaBody>
-			</Tarjeta>
-		{/if}
-
-		{#if tabActivo === Tabs.consultarUltimosPedidos && pedido?.idVendedor}
-			<Tarjeta class="max-h-[60vh] overflow-y-auto sm:w-full">
-				<TarjetaHeader
-					titulo={`Mis ultimos ${LIMITEULTIMOSPEDIDOS} pedidos`}
-					class="sticky top-0"
-				/>
-				<TarjetaBody>
-					{#if estadoActual.consultandoUltimosPedidos}
-						<PuntosCargando />
-					{:else if ultimosPedidos.length > 0}
-						<Tabla>
-							<thead class="sticky top-[62px] bg-white">
-								<Fila>
-									<CeldaHeader><div class="text-xs font-bold sm:text-base">ID</div></CeldaHeader>
-									<CeldaHeader>
-										<div class="text-xs font-bold sm:text-base">Estado</div>
-									</CeldaHeader>
-									<CeldaHeader>
-										<div class="text-xs font-bold sm:text-base">Fecha creado</div>
-									</CeldaHeader>
-									<CeldaHeader>
-										<div class="text-xs font-bold sm:text-base">Fecha entrega</div>
-									</CeldaHeader>
-									<div class="hidden sm:block">
-										<CeldaHeader>
-											<div class="text-xs font-bold sm:text-base">Comentario</div>
-										</CeldaHeader>
-									</div>
-									<CeldaHeader>
-										<div class="hidden text-base font-bold sm:block">Ver detalle</div>
-										<div class="text-xs sm:hidden">Ver</div>
-									</CeldaHeader>
-								</Fila>
-							</thead>
-							<tbody>
-								{#each ultimosPedidos as pedido}
-									<Fila>
-										<Celda>{pedido.id}</Celda>
-										<Celda>
-											{#if pedido.estado === EstadosPedido.creado || pedido.estado === EstadosPedido.pendiente}
-												<div class="text-xs font-bold sm:text-base">{EstadosPedido.creado}</div>
-											{/if}
-											{#if pedido.estado === EstadosPedido.aprobado}
-												<div class="text-xs font-bold text-green-600 sm:text-base">
-													{EstadosPedido.aprobado}
-												</div>
-											{/if}
-											{#if pedido.estado === EstadosPedido.rechazado}
-												<div class="text-xs font-bold text-red-500 sm:text-base">
-													{EstadosPedido.rechazado}
-												</div>
-											{/if}
-										</Celda>
-
-										<Celda>
-											<div class="text-xs sm:text-base">
-												{formatearFechaDDMMMYYYY(pedido.fechaCreado)}
-											</div>
-										</Celda>
-										<Celda>
-											<div class="text-xs sm:text-base">
-												{formatearFechaDDMMMYYYY(pedido.fechaEntrega)}
-											</div>
-										</Celda>
-										<div class="hidden sm:block">
-											<Celda>
-												<div class="text-xs sm:text-base">{pedido.comentario}</div>
-											</Celda>
-										</div>
-										<Celda>
-											<Boton
-												variante="link verdeFagar"
-												on:click={() => (pedidoSeleccionado = pedido)}
-											>
-												<div class="hidden text-base sm:block">Ver detalle</div>
-												<div class="text-xs sm:hidden">Ver</div>
-											</Boton>
-										</Celda>
-									</Fila>
-								{/each}
-							</tbody>
-						</Tabla>
-					{:else}
-						<div class="text-center">No hay pedidos</div>
-					{/if}
-				</TarjetaBody>
-			</Tarjeta>
-			{#if pedidoSeleccionado}
-				<Tarjeta class="sm:w-full">
-					<TarjetaHeader titulo={`Detalles Pedido id ID ${pedidoSeleccionado?.id}`}></TarjetaHeader>
-					<TarjetaBody>
-						<div class="flex w-full flex-col justify-start sm:flex-row">
-							<div class="flex w-full flex-col justify-between gap-2 sm:flex-row">
-								<div class="flex flex-col rounded-lg border p-4">
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Fecha creado:</div>
-										{formatearFechaDDMMMYYYY(pedidoSeleccionado?.fechaCreado)}
-									</div>
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Fecha entrega:</div>
-										{formatearFechaDDMMMYYYY(pedidoSeleccionado?.fechaEntrega)}
-									</div>
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Finalidad:</div>
-										{pedidoSeleccionado?.finalidad.charAt(0).toUpperCase() +
-											pedidoSeleccionado?.finalidad.slice(1)}
-									</div>
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Estado:</div>
-										{#if pedidoSeleccionado.estado === EstadosPedido.creado || pedidoSeleccionado.estado === EstadosPedido.pendiente}
-											<div class="font-bold">{EstadosPedido.creado}</div>
-										{/if}
-										{#if pedidoSeleccionado.estado === EstadosPedido.aprobado}
-											<div class="font-bold text-green-600">
-												{EstadosPedido.aprobado}
-											</div>
-										{/if}
-										{#if pedidoSeleccionado.estado === EstadosPedido.rechazado}
-											<div class="font-bold text-red-500">
-												{EstadosPedido.rechazado}
-											</div>
-										{/if}
-									</div>
-								</div>
-								<div class="flex flex-col rounded-lg border p-4">
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Cliente:</div>
-										{clientes.find((c) => c.id === pedidoSeleccionado?.idCliente)?.razonSocial}
-									</div>
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Sede:</div>
-										{pedidoSeleccionado?.clienteSedeDireccion}
-									</div>
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Ciudad:</div>
-										{pedidoSeleccionado?.clienteSedeCiudad}
-									</div>
-									<div class="flex flex-col sm:flex-row">
-										<div class="me-2 font-bold">Celular:</div>
-										{clientes.find((cliente) => cliente.id === pedidoSeleccionado?.idCliente)
-											?.celular}
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="w-full rounded-lg border py-4">
-							<div class="mb-4 overflow-y-auto rounded-lg pt-2">
-								<Tabla>
-									<thead>
+							<br />
+							<!--tabla que muestra los productos agregados-->
+							{#if productosAgregados.length > 0}
+								<div class="mb-4 overflow-y-auto rounded-lg pt-2">
+									<Tabla>
 										<Fila>
-											<CeldaHeader><div class="text-base font-bold">Tipo</div></CeldaHeader>
-											<CeldaHeader>
-												<div class="text-base font-bold">Producto</div>
-											</CeldaHeader>
-											<CeldaHeader>
-												<div class="hidden text-base font-bold sm:block">Cantidad</div>
-												<div class="text-xs sm:hidden">Cant</div>
-											</CeldaHeader>
-											<CeldaHeader>
-												<div class="text-xs font-bold sm:text-base">Total Unds</div>
-											</CeldaHeader>
-											<CeldaHeader>
-												<div class="text-xs font-bold sm:text-base">Valor</div>
-											</CeldaHeader>
-											<CeldaHeader>
-												<div class="text-xs font-bold sm:text-base">Total</div>
-											</CeldaHeader>
+											<CeldaHeader>ID</CeldaHeader>
+											<CeldaHeader>Producto</CeldaHeader>
+											<CeldaHeader>Tipo</CeldaHeader>
+											<CeldaHeader>Cant</CeldaHeader>
+											<CeldaHeader>Valor</CeldaHeader>
+											<CeldaHeader>Total</CeldaHeader>
+											<CeldaHeader>Quitar</CeldaHeader>
 										</Fila>
-									</thead>
-									<tbody>
-										{#each pedidoSeleccionado.detallePedido as detalle}
-											<Fila>
-												<Celda>
-													<div class="hidden text-base font-bold sm:block">{detalle.tipo}</div>
-													<div class="text-xs sm:hidden">{detalle.tipo.substring(0, 3)}</div>
+
+										{#each productosAgregados as productoAgregado}
+											<Fila class="items-center">
+												<Celda class="flex justify-center px-2 sm:px-4">
+													{productoAgregado.id}
 												</Celda>
-												<Celda>
-													<div class="hidden text-base sm:block">
-														{productos.find((p) => detalle.idProducto === p.id)?.nombre}
-													</div>
-													<div class="text-xs sm:hidden">
-														{productos.find((p) => detalle.idProducto === p.id)?.nombre}
-													</div>
+												<Celda class="px-1 text-sm sm:px-4 sm:text-base">
+													{productoAgregado.nombre}
 												</Celda>
-												<Celda><div class="text-xs sm:text-base">{detalle.cantidad}</div></Celda>
-												<Celda>
-													<div class="text-xs sm:text-base">
-														{detalle.cantidadEnvases
-															? detalle.cantidad * detalle.cantidadEnvases
-															: '-'}
-													</div>
+												<Celda class="px-1 text-sm sm:px-4 sm:text-base">
+													{productoAgregado.tipo.charAt(0).toUpperCase() +
+														productoAgregado.tipo.slice(1)}
 												</Celda>
-												<Celda>
-													<div class="text-xs sm:text-base">
-														{new Intl.NumberFormat('es-CO', {
-															style: 'currency',
-															currency: 'COP',
-															minimumFractionDigits: 0,
-															maximumFractionDigits: 0,
-														}).format(detalle.valor)}
-													</div>
+												<Celda class="px-1 text-start sm:px-4 sm:text-center">
+													{productoAgregado.cantidad}
 												</Celda>
-												<Celda>
-													<div class="text-xs sm:text-base">
-														{new Intl.NumberFormat('es-CO', {
-															style: 'currency',
-															currency: 'COP',
-															minimumFractionDigits: 0,
-															maximumFractionDigits: 0,
-														}).format(detalle.valor * detalle.cantidad)}
-													</div>
+
+												<Celda class="px-1 text-start sm:px-4 sm:text-center">
+													{new Intl.NumberFormat('es-CO', {
+														style: 'currency',
+														currency: 'COP',
+														minimumFractionDigits: 0,
+														maximumFractionDigits: 0,
+													}).format(productoAgregado.valor)}
+												</Celda>
+												<Celda class="px-1 text-start sm:px-4 sm:text-center">
+													{new Intl.NumberFormat('es-CO', {
+														style: 'currency',
+														currency: 'COP',
+														minimumFractionDigits: 0,
+														maximumFractionDigits: 0,
+													}).format(productoAgregado.cantidad * productoAgregado.valor)}
+												</Celda>
+												<Celda class="text-center">
+													<button
+														type="button"
+														on:click={() => {
+															productosAgregados = productosAgregados.filter(
+																(producto) =>
+																	!(
+																		producto.id === productoAgregado.id &&
+																		producto.tipo === productoAgregado.tipo
+																	),
+															);
+														}}
+													>
+														<Eliminar tamano={20} />
+													</button>
 												</Celda>
 											</Fila>
 										{/each}
-									</tbody>
-								</Tabla>
-							</div>
-						</div>
-						<div class="me-2 mt-2 flex w-full flex-col gap-2 rounded-lg border p-4">
-							<div class="flex flex-col sm:flex-row sm:justify-between">
-								<div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-									<div class="font-bold">Comentario:</div>
-									{pedidoSeleccionado.comentario ? pedidoSeleccionado.comentario : 'Ninguno'}
+									</Tabla>
 								</div>
-								<div
-									class="mt-2 flex w-full flex-col items-start sm:mt-0 sm:flex-row sm:justify-end"
-								>
-									<div class="font-bold">Total pedido:</div>
-									{new Intl.NumberFormat('es-CO', {
-										style: 'currency',
-										currency: 'COP',
-										minimumFractionDigits: 0,
-										maximumFractionDigits: 0,
-									}).format(
-										pedidoSeleccionado.detallePedido.reduce(
-											(acc, d) => acc + d.valor * d.cantidad,
-											0,
-										),
-									)}
+								<div class="mt-3">
+									<label for="w3review" class="mt-4">
+										Total pedido:
+										{new Intl.NumberFormat('es-CO', {
+											style: 'currency',
+											currency: 'COP',
+											minimumFractionDigits: 0,
+											maximumFractionDigits: 0,
+										}).format(
+											productosAgregados.reduce(
+												(acc, producto) => acc + producto.cantidad * producto.valor,
+												0,
+											),
+										)}
+									</label>
 								</div>
+							{/if}
+							<label for="w3review" class="mt-4">Comentarios generales:</label>
+							<textarea
+								bind:value={pedido.comentario}
+								class="input-texto mt-2"
+								id="w3review"
+								name="w3review"
+								rows="4"
+								cols="50"
+							/>
+							<div class="mt-4">
+								<Boton variante="principal" tipo="submit" cargando={estadoActual.creandoPedido}>
+									Crear pedido
+								</Boton>
 							</div>
-							<div class="flex flex-col sm:flex-row sm:gap-2">
-								<div class="font-bold text-red-500">Motivo Rechazo:</div>
-								{pedidoSeleccionado.motivoRechazo ? pedidoSeleccionado.motivoRechazo : 'Ninguno'}
-							</div>
-						</div>
+						</form>
 					</TarjetaBody>
 				</Tarjeta>
 			{/if}
-		{/if}
+
+			{#if tabActivo === Tabs.consultarUltimosPedidos && pedido?.idVendedor}
+				<Tarjeta class="max-h-[60vh] overflow-y-auto sm:w-full">
+					<TarjetaHeader
+						titulo={`Mis ultimos ${LIMITEULTIMOSPEDIDOS} pedidos`}
+						class="sticky top-0"
+					/>
+					<TarjetaBody>
+						{#if estadoActual.consultandoUltimosPedidos}
+							<PuntosCargando />
+						{:else if ultimosPedidos.length > 0}
+							<Tabla>
+								<thead class="sticky top-[62px] bg-white">
+									<Fila>
+										<CeldaHeader><div class="text-xs font-bold sm:text-base">ID</div></CeldaHeader>
+										<CeldaHeader>
+											<div class="text-xs font-bold sm:text-base">Estado</div>
+										</CeldaHeader>
+										<CeldaHeader>
+											<div class="text-xs font-bold sm:text-base">Fecha creado</div>
+										</CeldaHeader>
+										<CeldaHeader>
+											<div class="text-xs font-bold sm:text-base">Fecha entrega</div>
+										</CeldaHeader>
+										<div class="hidden sm:block">
+											<CeldaHeader>
+												<div class="text-xs font-bold sm:text-base">Comentario</div>
+											</CeldaHeader>
+										</div>
+										<CeldaHeader>
+											<div class="hidden text-base font-bold sm:block">Ver detalle</div>
+											<div class="text-xs sm:hidden">Ver</div>
+										</CeldaHeader>
+									</Fila>
+								</thead>
+								<tbody>
+									{#each ultimosPedidos as pedido}
+										<Fila>
+											<Celda>{pedido.id}</Celda>
+											<Celda>
+												{#if pedido.estado === EstadosPedido.creado || pedido.estado === EstadosPedido.pendiente}
+													<div class="text-xs font-bold sm:text-base">{EstadosPedido.creado}</div>
+												{/if}
+												{#if pedido.estado === EstadosPedido.aprobado}
+													<div class="text-xs font-bold text-green-600 sm:text-base">
+														{EstadosPedido.aprobado}
+													</div>
+												{/if}
+												{#if pedido.estado === EstadosPedido.rechazado}
+													<div class="text-xs font-bold text-red-500 sm:text-base">
+														{EstadosPedido.rechazado}
+													</div>
+												{/if}
+											</Celda>
+
+											<Celda>
+												<div class="text-xs sm:text-base">
+													{formatearFechaDDMMMYYYY(pedido.fechaCreado)}
+												</div>
+											</Celda>
+											<Celda>
+												<div class="text-xs sm:text-base">
+													{formatearFechaDDMMMYYYY(pedido.fechaEntrega)}
+												</div>
+											</Celda>
+											<div class="hidden sm:block">
+												<Celda>
+													<div class="text-xs sm:text-base">{pedido.comentario}</div>
+												</Celda>
+											</div>
+											<Celda>
+												<Boton
+													variante="link verdeFagar"
+													on:click={() => (pedidoSeleccionado = pedido)}
+												>
+													<div class="hidden text-base sm:block">Ver detalle</div>
+													<div class="text-xs sm:hidden">Ver</div>
+												</Boton>
+											</Celda>
+										</Fila>
+									{/each}
+								</tbody>
+							</Tabla>
+						{:else}
+							<div class="text-center">No hay pedidos</div>
+						{/if}
+					</TarjetaBody>
+				</Tarjeta>
+				{#if pedidoSeleccionado}
+					<Tarjeta class="sm:w-full">
+						<TarjetaHeader titulo={`Detalles Pedido id ID ${pedidoSeleccionado?.id}`}
+						></TarjetaHeader>
+						<TarjetaBody>
+							<div class="flex w-full flex-col justify-start sm:flex-row">
+								<div class="flex w-full flex-col justify-between gap-2 sm:flex-row">
+									<div class="flex flex-col rounded-lg border p-4">
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Fecha creado:</div>
+											{formatearFechaDDMMMYYYY(pedidoSeleccionado?.fechaCreado)}
+										</div>
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Fecha entrega:</div>
+											{formatearFechaDDMMMYYYY(pedidoSeleccionado?.fechaEntrega)}
+										</div>
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Finalidad:</div>
+											{pedidoSeleccionado?.finalidad.charAt(0).toUpperCase() +
+												pedidoSeleccionado?.finalidad.slice(1)}
+										</div>
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Estado:</div>
+											{#if pedidoSeleccionado.estado === EstadosPedido.creado || pedidoSeleccionado.estado === EstadosPedido.pendiente}
+												<div class="font-bold">{EstadosPedido.creado}</div>
+											{/if}
+											{#if pedidoSeleccionado.estado === EstadosPedido.aprobado}
+												<div class="font-bold text-green-600">
+													{EstadosPedido.aprobado}
+												</div>
+											{/if}
+											{#if pedidoSeleccionado.estado === EstadosPedido.rechazado}
+												<div class="font-bold text-red-500">
+													{EstadosPedido.rechazado}
+												</div>
+											{/if}
+										</div>
+									</div>
+									<div class="flex flex-col rounded-lg border p-4">
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Cliente:</div>
+											{clientes.find((c) => c.id === pedidoSeleccionado?.idCliente)?.razonSocial}
+										</div>
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Sede:</div>
+											{pedidoSeleccionado?.clienteSedeDireccion}
+										</div>
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Ciudad:</div>
+											{pedidoSeleccionado?.clienteSedeCiudad}
+										</div>
+										<div class="flex flex-col sm:flex-row">
+											<div class="me-2 font-bold">Celular:</div>
+											{clientes.find((cliente) => cliente.id === pedidoSeleccionado?.idCliente)
+												?.celular}
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="w-full rounded-lg border py-4">
+								<div class="mb-4 overflow-y-auto rounded-lg pt-2">
+									<Tabla>
+										<thead>
+											<Fila>
+												<CeldaHeader><div class="text-base font-bold">Tipo</div></CeldaHeader>
+												<CeldaHeader>
+													<div class="text-base font-bold">Producto</div>
+												</CeldaHeader>
+												<CeldaHeader>
+													<div class="hidden text-base font-bold sm:block">Cantidad</div>
+													<div class="text-xs sm:hidden">Cant</div>
+												</CeldaHeader>
+												<CeldaHeader>
+													<div class="text-xs font-bold sm:text-base">Total Unds</div>
+												</CeldaHeader>
+												<CeldaHeader>
+													<div class="text-xs font-bold sm:text-base">Valor</div>
+												</CeldaHeader>
+												<CeldaHeader>
+													<div class="text-xs font-bold sm:text-base">Total</div>
+												</CeldaHeader>
+											</Fila>
+										</thead>
+										<tbody>
+											{#each pedidoSeleccionado.detallePedido as detalle}
+												<Fila>
+													<Celda>
+														<div class="hidden text-base font-bold sm:block">{detalle.tipo}</div>
+														<div class="text-xs sm:hidden">{detalle.tipo.substring(0, 3)}</div>
+													</Celda>
+													<Celda>
+														<div class="hidden text-base sm:block">
+															{productos.find((p) => detalle.idProducto === p.id)?.nombre}
+														</div>
+														<div class="text-xs sm:hidden">
+															{productos.find((p) => detalle.idProducto === p.id)?.nombre}
+														</div>
+													</Celda>
+													<Celda><div class="text-xs sm:text-base">{detalle.cantidad}</div></Celda>
+													<Celda>
+														<div class="text-xs sm:text-base">
+															{detalle.cantidadEnvases
+																? detalle.cantidad * detalle.cantidadEnvases
+																: '-'}
+														</div>
+													</Celda>
+													<Celda>
+														<div class="text-xs sm:text-base">
+															{new Intl.NumberFormat('es-CO', {
+																style: 'currency',
+																currency: 'COP',
+																minimumFractionDigits: 0,
+																maximumFractionDigits: 0,
+															}).format(detalle.valor)}
+														</div>
+													</Celda>
+													<Celda>
+														<div class="text-xs sm:text-base">
+															{new Intl.NumberFormat('es-CO', {
+																style: 'currency',
+																currency: 'COP',
+																minimumFractionDigits: 0,
+																maximumFractionDigits: 0,
+															}).format(detalle.valor * detalle.cantidad)}
+														</div>
+													</Celda>
+												</Fila>
+											{/each}
+										</tbody>
+									</Tabla>
+								</div>
+							</div>
+							<div class="me-2 mt-2 flex w-full flex-col gap-2 rounded-lg border p-4">
+								<div class="flex flex-col sm:flex-row sm:justify-between">
+									<div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+										<div class="font-bold">Comentario:</div>
+										{pedidoSeleccionado.comentario ? pedidoSeleccionado.comentario : 'Ninguno'}
+									</div>
+									<div
+										class="mt-2 flex w-full flex-col items-start sm:mt-0 sm:flex-row sm:justify-end"
+									>
+										<div class="font-bold">Total pedido:</div>
+										{new Intl.NumberFormat('es-CO', {
+											style: 'currency',
+											currency: 'COP',
+											minimumFractionDigits: 0,
+											maximumFractionDigits: 0,
+										}).format(
+											pedidoSeleccionado.detallePedido.reduce(
+												(acc, d) => acc + d.valor * d.cantidad,
+												0,
+											),
+										)}
+									</div>
+								</div>
+								<div class="flex flex-col sm:flex-row sm:gap-2">
+									<div class="font-bold text-red-500">Motivo Rechazo:</div>
+									{pedidoSeleccionado.motivoRechazo ? pedidoSeleccionado.motivoRechazo : 'Ninguno'}
+								</div>
+							</div>
+						</TarjetaBody>
+					</Tarjeta>
+				{/if}
+			{/if}
+		</div>
 	{/if}
 </div>
 

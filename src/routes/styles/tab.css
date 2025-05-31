@@ -2,12 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-.contenedorTabs {
-	@apply mb-2 flex flex-row items-center justify-center;
-}
-
 .tab {
-	@apply inline-flex items-center justify-center gap-2 rounded-t-lg border-b-2 p-4 text-sm hover:border-gray-300 hover:text-gray-600 sm:text-lg dark:hover:text-gray-300;
+	@apply inline-flex min-w-40 items-center justify-center gap-2 rounded-t-lg border-b-2 p-4 text-sm hover:border-gray-300 hover:text-gray-600 sm:text-lg dark:hover:text-gray-300;
 }
 
 .tab-activo {

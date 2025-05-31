@@ -6,9 +6,9 @@
 
 <div
 	class={cn(
-		'mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg sm:w-1/2',
+		'mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg sm:w-full',
 		customClasses,
 	)}
 >
-	<slot></slot>
+	<slot />
 </div>
