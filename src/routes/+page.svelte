@@ -1124,7 +1124,6 @@
 													tipoAceite: null,
 													peso: producto.peso,
 												};
-												console.log('productoSeleccionado', productoSeleccionado);
 											}}
 										>
 											<td class="px-4">{producto.id}</td>
