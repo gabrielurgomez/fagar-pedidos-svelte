@@ -169,7 +169,6 @@
 				headers: { 'Content-Type': 'application/json' },
 			},
 		);
-		console.log('rtaJson', rtaJson);
 		switch (rtaJson.status) {
 			case 200: {
 				const rta = await rtaJson.json();
