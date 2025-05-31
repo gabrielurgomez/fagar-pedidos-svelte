@@ -1,6 +1,6 @@
 ## PEDIDOS
 
-Creating orders from the seller to the main admin panel working in another different repo
+Proyecto Svelte para la creacion de pedidos
 
 ## Frontend/Backend
 

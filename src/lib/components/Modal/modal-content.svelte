@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Dialog as ModalPrimitive } from 'bits-ui';
-	import { cn } from '../../../utils';
+	import { cn } from '$lib/utils/cn';
 	import { fade } from 'svelte/transition';
 
 	let customClass = '';

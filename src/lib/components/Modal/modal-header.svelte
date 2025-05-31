@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn } from '../../../utils';
+	import { cn } from '$lib/utils/cn';
 	import { Dialog as ModalPrimitive } from 'bits-ui';
 	import IconoCerrar from '../../icons/Cerrar.svelte';
 

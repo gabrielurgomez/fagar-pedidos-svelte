@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Combobox } from 'bits-ui';
-	import { cn } from '../../utils';
+	import { cn } from '$lib/utils/cn';
 	import IconoCheckmark from '../../icons/Checkmark.svelte';
 
 	export let value: string | number = '';

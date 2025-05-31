@@ -1,7 +1,7 @@
 <script lang="ts">
 	import IconoEliminar from '$lib/icons/Eliminar.svelte';
 	import SpinnerCargando from './../SpinnerCargando.svelte';
-	import { cn } from '../../../utils';
+	import { cn } from '$lib/utils/cn';
 
 	type Variantes = 'principal' | 'rojo' | 'link verdeFagar' | 'link rojo' | 'icono';
 	type nombresIconos = 'eliminar' | undefined;

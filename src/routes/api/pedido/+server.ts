@@ -158,7 +158,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				},
 			});
 
-			let cuerpoHtml = `<b>Se notifica nuevo pedido</b><br>
+			const cuerpoHtml = `<b>Se notifica nuevo pedido</b><br>
 			<br>
 			<b>ID:</b> ${nuevoPedido.id}<br>
 			<b>Vendedor</b>: ${vendedor ? vendedor.nombre : 'Vendedor no encontrado'}<br>
@@ -179,7 +179,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			} catch (e) {
 				return new Response(
 					JSON.stringify({
-						message: `El pedido se creó pero no se pudo notificar por correo electronico a la empresa, favor avisar de este error, pedido creado con ID:${nuevoPedido.id}`,
+						message: `El pedido se creó correctamente con ID ${nuevoPedido.id}, no es necesario que vuelva a crearlo, el error es que no se pudo notificar por correo electronico a la empresa, favor avisar de este error, error de notificacion de correo electronico: ${e}`,
 					}),
 					{
 						status: 201,

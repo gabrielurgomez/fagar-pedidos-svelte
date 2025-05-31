@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn } from '../../../utils';
+	import { cn } from '$lib/utils/cn';
 	export let titulo: string = '';
 
 	let customClasses: string = '';
