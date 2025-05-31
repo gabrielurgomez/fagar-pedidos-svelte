@@ -1,11 +1,6 @@
 import { nombresCookies } from '$lib/constants/cookie.constant';
-import { PrismaClient } from '@prisma/client';
-import type { VendedorLogueado } from '$lib/types/vendedor.type';
-
-const prisma = new PrismaClient();
 
 export const load = async ({ cookies }) => {
-	let vendedorLogueado: VendedorLogueado | null = null;
 	let numeroCedulaVendedor = '';
 	let fechaExpedicionDocumentoVendedor = '';
 

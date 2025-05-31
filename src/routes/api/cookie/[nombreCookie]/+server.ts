@@ -1,5 +1,4 @@
 import { error } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
 import type { RequestHandler } from '@sveltejs/kit';
 
 export const DELETE: RequestHandler = async ({ params, cookies }) => {

@@ -77,7 +77,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 
 		if (pedidos.length > 0) {
-			let pedidosFechasFormateadas = pedidos.map((p: PedidoConDetalle) => {
+			const pedidosFechasFormateadas = pedidos.map((p: PedidoConDetalle) => {
 				return {
 					...p,
 					fechaEntrega: formatearFechaISO8601aYYYYMMDD(p.fechaEntrega),
