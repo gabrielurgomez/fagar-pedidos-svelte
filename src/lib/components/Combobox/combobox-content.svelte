@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Combobox } from 'bits-ui';
-	import { cn } from '../../utils';
+	import { cn } from '$lib/utils/cn';
 
 	let customClasses = '';
 	export { customClasses as class };

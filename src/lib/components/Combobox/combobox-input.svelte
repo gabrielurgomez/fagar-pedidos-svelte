@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn } from '../../utils';
+	import { cn } from '$lib/utils/cn';
 	import { Combobox } from 'bits-ui';
 	import ChevronIcon from '../../icons/Chevron.svelte';
 

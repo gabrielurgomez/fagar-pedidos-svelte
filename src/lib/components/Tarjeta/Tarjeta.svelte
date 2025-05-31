@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn } from '../../../utils';
+	import { cn } from '$lib/utils/cn';
 	let customClasses: string = '';
 	export { customClasses as class };
 </script>
