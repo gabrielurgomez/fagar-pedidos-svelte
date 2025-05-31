@@ -1,3 +1,3 @@
-<th class="text-left px-2">
+<th class="px-2 text-left">
 	<slot />
 </th>

@@ -1,7 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { extendTailwindMerge } from 'tailwind-merge';
 
-
 const dtl = {
 	theme: {
 		colors: {
@@ -72,14 +71,14 @@ const dtl = {
 			sans: ['"Area Normal"', 'Verdana', 'Helvetica', 'sans-serif'],
 		},
 		fontWeight: {
-			normal: 400,//bold in Area Normal, but usage + fall back font Verdana matches better these weights (less fout)
-			semibold: 500,//extrabold in Area Normal
-			bold: 600,//black in Area Normal
+			normal: 400, //bold in Area Normal, but usage + fall back font Verdana matches better these weights (less fout)
+			semibold: 500, //extrabold in Area Normal
+			bold: 600, //black in Area Normal
 		},
 		boxShadow: {
-			elevation1: '0px 1px 4px 0px rgba(0,0,0,0.08)',//navigation bar
-			elevation2: '0px 12px 16px 0px rgba(0,0,0,0.08)',//menus
-			elevation3: '0px 4px 40px 0px rgba(0,0,0,0.2)',//modals, toasts
+			elevation1: '0px 1px 4px 0px rgba(0,0,0,0.08)', //navigation bar
+			elevation2: '0px 12px 16px 0px rgba(0,0,0,0.08)', //menus
+			elevation3: '0px 4px 40px 0px rgba(0,0,0,0.2)', //modals, toasts
 			none: '0 0 #0000',
 		},
 		extend: {
@@ -87,74 +86,110 @@ const dtl = {
 				'4xl': '2.0rem',
 			},
 			fontSize: {
-				display1: ['5rem', {
-					lineHeight: '5.5rem',
-					letterSpacing: '-.01em',
-					fontWeight: 500,
-				}],//80/88
-				display2: ['4rem', {
-					lineHeight: '5rem',
-					letterSpacing: '-.01em',
-					fontWeight: 500,
-				}],//64/80
-				display3: ['3.25rem', {
-					lineHeight: '3.75rem',
-					letterSpacing: '-.02em',
-					fontWeight: 500,
-				}],//52/60
-				display4: ['2.5rem', {
-					lineHeight: '3.25rem',
-					letterSpacing: '-.02em',
-					fontWeight: 500,
-				}],//40/52
-				display5: ['1.5rem', {
-					lineHeight: '2rem',
-					fontWeight: 500,
-				}],//24/32
-				subtitle1: ['1.1875rem', {
-					lineHeight: '1.75rem',
-					letterSpacing: '.01em',
-					fontWeight: 500,
-				}],//19/28
-				subtitle2: ['1.0625rem', {
-					lineHeight: '1.5rem',
-					letterSpacing: '.01em',
-					fontWeight: 500,
-				}],//17/24
-				body1: ['0.9375rem', {
-					lineHeight: '1.5rem',
-					letterSpacing: '.01em',
-				}],//15/24
-				body2: ['0.8125rem', {
-					lineHeight: '1.25rem',
-					letterSpacing: '.01em',
-				}],//13/20
-				caption1: ['0.6875rem', {
-					lineHeight: '1rem',
-					letterSpacing: '.02em',
-					fontWeight: 500,
-				}],//11/16
-				caption2: ['0.625rem', {
-					lineHeight: '1rem',
-					letterSpacing: '.02em',
-					fontWeight: 500,
-				}],//10/16
-				caption3: ['0.5625rem', {
-					lineHeight: '0.6875rem',
-					letterSpacing: '.03em',
-					fontWeight: 600,
-				}]//9/11
+				display1: [
+					'5rem',
+					{
+						lineHeight: '5.5rem',
+						letterSpacing: '-.01em',
+						fontWeight: 500,
+					},
+				], //80/88
+				display2: [
+					'4rem',
+					{
+						lineHeight: '5rem',
+						letterSpacing: '-.01em',
+						fontWeight: 500,
+					},
+				], //64/80
+				display3: [
+					'3.25rem',
+					{
+						lineHeight: '3.75rem',
+						letterSpacing: '-.02em',
+						fontWeight: 500,
+					},
+				], //52/60
+				display4: [
+					'2.5rem',
+					{
+						lineHeight: '3.25rem',
+						letterSpacing: '-.02em',
+						fontWeight: 500,
+					},
+				], //40/52
+				display5: [
+					'1.5rem',
+					{
+						lineHeight: '2rem',
+						fontWeight: 500,
+					},
+				], //24/32
+				subtitle1: [
+					'1.1875rem',
+					{
+						lineHeight: '1.75rem',
+						letterSpacing: '.01em',
+						fontWeight: 500,
+					},
+				], //19/28
+				subtitle2: [
+					'1.0625rem',
+					{
+						lineHeight: '1.5rem',
+						letterSpacing: '.01em',
+						fontWeight: 500,
+					},
+				], //17/24
+				body1: [
+					'0.9375rem',
+					{
+						lineHeight: '1.5rem',
+						letterSpacing: '.01em',
+					},
+				], //15/24
+				body2: [
+					'0.8125rem',
+					{
+						lineHeight: '1.25rem',
+						letterSpacing: '.01em',
+					},
+				], //13/20
+				caption1: [
+					'0.6875rem',
+					{
+						lineHeight: '1rem',
+						letterSpacing: '.02em',
+						fontWeight: 500,
+					},
+				], //11/16
+				caption2: [
+					'0.625rem',
+					{
+						lineHeight: '1rem',
+						letterSpacing: '.02em',
+						fontWeight: 500,
+					},
+				], //10/16
+				caption3: [
+					'0.5625rem',
+					{
+						lineHeight: '0.6875rem',
+						letterSpacing: '.03em',
+						fontWeight: 600,
+					},
+				], //9/11
 			},
 			screens: {
-				'xxs': '400px',
-				'xs': '480px',
+				xxs: '400px',
+				xs: '480px',
 			},
 			spacing: {
-				'15': '3.75rem',//banners (ie. 60px based on 16px base using Tailwind height math)
+				'15': '3.75rem', //banners (ie. 60px based on 16px base using Tailwind height math)
 			},
-		}
+		},
 	},
-}
+};
 
 const customTwMerge = extendTailwindMerge({
 	theme: dtl.theme,

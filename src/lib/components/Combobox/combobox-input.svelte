@@ -12,14 +12,14 @@
 <div class="relative">
 	<Combobox.Input
 		class={cn(
-			`w-full
-			h-12
+			`text-md
 			mt-3
-			px-3
+			h-12
+			w-full
 			truncate
 			rounded-lg
 			border
-			text-md
+			px-3
 			transition-colors
 			focus:outline-none
 			focus:ring-2

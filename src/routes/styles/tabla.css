@@ -3,22 +3,21 @@
 @tailwind utilities;
 
 .tabla {
-    @apply w-full table-auto text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400
+	@apply w-full table-auto text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400;
 }
 
 .tabla-thead {
-    @apply text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 rounded-lg
+	@apply rounded-lg bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400;
 }
 
 .tabla-th {
-    @apply py-3
+	@apply py-3;
 }
 
-
 .tabla-tr {
-    @apply border-b
+	@apply border-b;
 }
 
 .tabla-td {
-    @apply py-4
+	@apply py-4;
 }

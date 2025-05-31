@@ -15,17 +15,17 @@
 	/>
 	<ModalPrimitive.Content
 		class={cn(
-			`rounded-lg
+			`sm:h-6/7
 			fixed
 			left-[50%]
 			top-[50%]
 			z-50
+			w-screen
 			translate-x-[-50%]
 			translate-y-[-50%]
+			rounded-lg	
 			bg-white
-			py-4	
-			sm:h-6/7
-			w-screen
+			py-4
 			sm:max-w-[490px]
 			md:w-full`,
 			customClass,
