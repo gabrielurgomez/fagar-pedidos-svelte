@@ -35,6 +35,28 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 		}
 
+		//todos los clientes tienen parametrizado un porcentajeDescuento,
+		//este debe ir en el producto el cual tambien se llama porcentajeDescuento
+		//por ende se necesita consultar el cliente para saber si tiene o no ese porcentajeDescuento
+		const cliente = await prisma.clientes.findUnique({
+			where: {
+				id: idCliente,
+			},
+		});
+		if (!cliente) {
+			return new Response(
+				JSON.stringify({
+					error: `No se puede crear el pedido por que no se encuentra el cliente de ID ${idCliente}, este es necesario para saber el porcentaje de descuento que aplica al pedido`,
+				}),
+				{
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+		}
+
 		if (!clienteSedeCiudad) {
 			return new Response(JSON.stringify({ error: 'No se recibio la clave clienteSedeCiudad' }), {
 				status: 400,
@@ -145,6 +167,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					})),
 				},
 				porcentajeIVA: finalidad === FinalidadesPedido.cotizacion ? null : PORCENTAJE_IVA,
+				porcentajeDescuento: cliente.porcentajeDescuento,
 				creado: fechaHoraActualISO8601_UTC,
 			},
 		});

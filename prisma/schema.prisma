@@ -38,55 +38,56 @@ model detallePedido {
 }
 
 model pedidos {
-  id                   Int      @id @default(autoincrement())
+  id                   Int             @id @default(autoincrement())
   idCliente            Int
-  clienteSedeCiudad    String   @db.VarChar(100)
-  clienteSedeDireccion String   @db.VarChar(100)
+  clienteSedeCiudad    String          @db.VarChar(100)
+  clienteSedeDireccion String          @db.VarChar(100)
   idVendedor           Int
-  fechaEntrega         DateTime @db.Date
-  fechaCreado          DateTime @db.Date
-  finalidad            String   @db.VarChar(50)
-  estado               String   @db.VarChar(50)
-  motivoRechazo        String?  @db.VarChar(500)
+  fechaEntrega         DateTime        @db.Date
+  fechaCreado          DateTime        @db.Date
+  finalidad            String          @db.VarChar(50)
+  estado               String          @db.VarChar(50)
+  motivoRechazo        String?         @db.VarChar(500)
   porcentajeIVA        Float?
-  comentario           String   @db.VarChar(100)
-  idPedidoPendiente    Int?     @unique
-  creado               DateTime @db.DateTime(0)
-
-  detallePedido detallePedido[]
-  cliente       clientes        @relation(fields: [idCliente], references: [id])
-  vendedor      vendedores      @relation(fields: [idVendedor], references: [id])
-  detalleCargue detalleCargue?
-  documento     documentos?
+  porcentajeDescuento  Float?
+  comentario           String          @db.VarChar(100)
+  idPedidoPendiente    Int?            @unique
+  creado               DateTime        @db.DateTime(0)
+  detalleAbonosId      Int?
+  detalleCargue        detalleCargue?
+  detallePedido        detallePedido[]
+  documento            documentos?
+  cliente              clientes        @relation(fields: [idCliente], references: [id])
+  vendedor             vendedores      @relation(fields: [idVendedor], references: [id])
 
   @@index([idCliente], map: "pedidos_idCliente_fkey")
   @@index([idVendedor], map: "pedidos_idVendedor_fkey")
 }
 
 model documentos {
-  id                  Int      @id @default(autoincrement())
-  idPedido            Int
-  porcentajeRetencion Float?
-  creado              DateTime @db.DateTime(0)
-  pedido              pedidos  @relation(fields: [idPedido], references: [id], onDelete: Cascade)
+  id                   Int                    @id @default(autoincrement())
+  idPedido             Int                    @unique
+  creado               DateTime               @db.DateTime(0)
+  porcentajeRetencion  Float?
+  detalleAbonosCartera detalleAbonosCartera[]
+  pedido               pedidos                @relation(fields: [idPedido], references: [id], onDelete: Cascade)
 
-  @@unique([idPedido])
   @@index([idPedido], map: "documentos_idPedido_fkey")
 }
 
 model clientes {
-  id              Int     @id @default(autoincrement())
-  razonSocial     String  @db.VarChar(100)
-  email           String? @db.VarChar(50)
-  nombreComercial String  @db.VarChar(100)
-  direccion       String  @db.VarChar(100)
-  celular         String  @db.VarChar(20)
-  tipoPersona     String  @db.VarChar(100)
-  nit             String  @unique(map: "nit") @db.VarChar(20)
-
-  sedes      detalleClientesSedes[]
-  vendedores detalleClientesVendedores[]
-  pedidos    pedidos[]
+  id                  Int                         @id @default(autoincrement())
+  razonSocial         String                      @db.VarChar(100)
+  email               String?                     @db.VarChar(50)
+  nombreComercial     String                      @db.VarChar(100)
+  direccion           String                      @db.VarChar(100)
+  celular             String                      @db.VarChar(20)
+  tipoPersona         String                      @db.VarChar(100)
+  nit                 String                      @unique(map: "nit") @db.VarChar(20)
+  porcentajeDescuento Float?
+  sedes               detalleClientesSedes[]
+  vendedores          detalleClientesVendedores[]
+  pedidos             pedidos[]
 }
 
 model detalleClientesVendedores {
@@ -111,24 +112,26 @@ model detalleClientesSedes {
 }
 
 model cargues {
-  id               Int       @id @default(autoincrement())
-  codigo           String?   @unique(map: "codigo") @db.VarChar(20)
+  id               Int             @id @default(autoincrement())
+  codigo           String?         @unique(map: "codigo") @db.VarChar(20)
   idVehiculo       Int?
   idConductor      Int?
-  arlConductor     String?   @db.VarChar(150)
-  epsConductor     String?   @db.VarChar(150)
-  fecha            DateTime? @db.Date
-  numeroGuia       String?   @db.VarChar(50)
-  numeroLote       String?   @db.VarChar(50)
-  fechaVencimiento DateTime? @db.Date
-  fechaEnvasado    DateTime? @db.Date
-  fechaCreado      DateTime  @db.Date
-  observaciones    String?   @db.VarChar(500)
-  creado           DateTime  @db.DateTime(0)
+  epsConductor     String?         @db.VarChar(150)
+  arlConductor     String?         @db.VarChar(150)
+  fecha            DateTime?       @db.Date
+  numeroGuia       String?         @db.VarChar(50)
+  numeroLote       String?         @db.VarChar(50)
+  fechaEnvasado    DateTime?       @db.Date
+  fechaVencimiento DateTime?       @db.Date
+  fechaCreado      DateTime        @db.Date
+  observaciones    String?         @db.VarChar(500)
+  creado           DateTime        @db.DateTime(0)
+  conductor        conductores?    @relation(fields: [idConductor], references: [id])
+  vehiculo         vehiculos?      @relation(fields: [idVehiculo], references: [id])
+  detalleCargue    detalleCargue[]
 
-  conductor     conductores?    @relation(fields: [idConductor], references: [id])
-  vehiculo      vehiculos?      @relation(fields: [idVehiculo], references: [id])
-  detalleCargue detalleCargue[]
+  @@index([idConductor], map: "cargues_idConductor_fkey")
+  @@index([idVehiculo], map: "cargues_idVehiculo_fkey")
 }
 
 model detalleCargue {
@@ -158,4 +161,27 @@ model vehiculos {
   tipo    String    @db.VarChar(100)
   estado  String    @db.VarChar(50)
   cargues cargues[]
+}
+
+model abonosCartera {
+  id             Int                    @id @default(autoincrement())
+  fecha          DateTime               @db.Date
+  metodoPago     String                 @db.VarChar(50)
+  tipoMovimiento String                 @db.VarChar(50)
+  consecutivo    String?                @db.VarChar(50)
+  observaciones  String?                @db.VarChar(500)
+  creado         DateTime               @db.DateTime(0)
+  detalleAbonos  detalleAbonosCartera[]
+}
+
+model detalleAbonosCartera {
+  id             Int           @id @default(autoincrement())
+  idAbonoCartera Int
+  idDocumento    Int
+  valor          Int
+  abonoCartera   abonosCartera @relation(fields: [idAbonoCartera], references: [id])
+  documento      documentos    @relation(fields: [idDocumento], references: [id])
+
+  @@index([idAbonoCartera], map: "detalleAbonos_idAbono_fkey")
+  @@index([idDocumento], map: "detalleAbonos_idDocumento_fkey")
 }
