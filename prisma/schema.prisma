@@ -122,8 +122,8 @@ model cargues {
   numeroGuia            String?         @db.VarChar(50)
   numeroLotePalma       String?         @db.VarChar(50)
   fechaVencimientoPalma DateTime?       @db.Date
-  numeroLoteSoya        String          @db.VarChar(50)
-  fechaVencimientoSoya  DateTime        @db.Date
+  numeroLoteSoya        String?         @db.VarChar(50)
+  fechaVencimientoSoya  DateTime?       @db.Date
   fechaEnvasado         DateTime?       @db.Date
   fechaCreado           DateTime        @db.Date
   observaciones         String?         @db.VarChar(500)
