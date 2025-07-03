@@ -49,11 +49,11 @@ model pedidos {
   estado               String          @db.VarChar(50)
   motivoRechazo        String?         @db.VarChar(500)
   porcentajeIVA        Float?
-  porcentajeDescuento  Float?
   comentario           String          @db.VarChar(100)
   idPedidoPendiente    Int?            @unique
   creado               DateTime        @db.DateTime(0)
   detalleAbonosId      Int?
+  porcentajeDescuento  Float?
   detalleCargue        detalleCargue?
   detallePedido        detallePedido[]
   documento            documentos?
@@ -112,23 +112,25 @@ model detalleClientesSedes {
 }
 
 model cargues {
-  id               Int             @id @default(autoincrement())
-  codigo           String?         @unique(map: "codigo") @db.VarChar(20)
-  idVehiculo       Int?
-  idConductor      Int?
-  epsConductor     String?         @db.VarChar(150)
-  arlConductor     String?         @db.VarChar(150)
-  fecha            DateTime?       @db.Date
-  numeroGuia       String?         @db.VarChar(50)
-  numeroLote       String?         @db.VarChar(50)
-  fechaEnvasado    DateTime?       @db.Date
-  fechaVencimiento DateTime?       @db.Date
-  fechaCreado      DateTime        @db.Date
-  observaciones    String?         @db.VarChar(500)
-  creado           DateTime        @db.DateTime(0)
-  conductor        conductores?    @relation(fields: [idConductor], references: [id])
-  vehiculo         vehiculos?      @relation(fields: [idVehiculo], references: [id])
-  detalleCargue    detalleCargue[]
+  id                    Int             @id @default(autoincrement())
+  codigo                String?         @unique(map: "codigo") @db.VarChar(20)
+  idVehiculo            Int?
+  idConductor           Int?
+  epsConductor          String?         @db.VarChar(150)
+  arlConductor          String?         @db.VarChar(150)
+  fecha                 DateTime?       @db.Date
+  numeroGuia            String?         @db.VarChar(50)
+  numeroLotePalma       String?         @db.VarChar(50)
+  fechaVencimientoPalma DateTime?       @db.Date
+  numeroLoteSoya        String          @db.VarChar(50)
+  fechaVencimientoSoya  DateTime        @db.Date
+  fechaEnvasado         DateTime?       @db.Date
+  fechaCreado           DateTime        @db.Date
+  observaciones         String?         @db.VarChar(500)
+  creado                DateTime        @db.DateTime(0)
+  conductor             conductores?    @relation(fields: [idConductor], references: [id])
+  vehiculo              vehiculos?      @relation(fields: [idVehiculo], references: [id])
+  detalleCargue         detalleCargue[]
 
   @@index([idConductor], map: "cargues_idConductor_fkey")
   @@index([idVehiculo], map: "cargues_idVehiculo_fkey")
