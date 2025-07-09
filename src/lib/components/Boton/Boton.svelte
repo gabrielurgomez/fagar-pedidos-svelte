@@ -31,7 +31,7 @@
 	}
 
 	$: if (variante === 'link verdeFagar') {
-		clases = 'hover:underline rounded text-[#00732f]';
+		clases = 'hover:underline rounded text-[#00732f] dark:text-green-200';
 		spinnerClasses = 'fill-green-700';
 	}
 

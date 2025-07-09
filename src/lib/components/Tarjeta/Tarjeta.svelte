@@ -6,7 +6,7 @@
 
 <div
 	class={cn(
-		'mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg sm:w-full',
+		'mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800',
 		customClasses,
 	)}
 >
