@@ -4,13 +4,23 @@ export type Pedido = pedidos & {
 	detallePedido: detallePedido[];
 };
 
-export type PedidoConDetalleFormulario = Omit<
+export type DetallePedido = detallePedido;
+
+//El id no lo necesito, es autoincremental, el idPedido Prisma lo crea automaticamente
+export type detallePedidoCrear = Omit<DetallePedido, 'id' | 'idPedido'>;
+
+export type PedidoCrear = Omit<
 	Pedido,
-	'id' | 'idPedidoPendiente' | 'fechaEntrega' | 'fechaCreado' | 'creado' | 'motivoRechazo'
+	| 'id'
+	| 'idPedidoPendiente'
+	| 'fechaEntrega'
+	| 'creado'
+	| 'motivoRechazo'
+	| 'fechaCreado'
+	| 'porcentajeIVA'
+	| 'detallePedido'
 > & {
 	fechaEntrega: Date | null;
-	fechaCreado: Date | null;
-	detallePedido: detallePedido[];
 };
 
 export type FinalidadesPedido = 'COTIZACION' | 'PROFORMA';

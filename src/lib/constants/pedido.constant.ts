@@ -1,3 +1,5 @@
+import type { FinalidadesPedidoConSeleccione } from '$lib/types/pedido.type';
+
 export enum EstadosPedido {
 	creado = 'CREADO',
 	aprobado = 'APROBADO',
@@ -20,7 +22,23 @@ export const PORCENTAJE_IVA = 19;
 
 export const LIMITEULTIMOSPEDIDOS = 300;
 
-export const FinalidadesPedido = {
-	cotizacion: 'COTIZACION',
-	proforma: 'PROFORMA',
-};
+export enum FinalidadesPedidoEnum {
+	cotizacion = 'COTIZACION',
+	proforma = 'PROFORMA',
+}
+
+// export const finalidadesPedido: Record<keyof typeof FinalidadesPedidoEnum, FinalidadesPedido> = {
+// 	cotizacion: FinalidadesPedidoEnum.cotizacion,
+// 	proforma: FinalidadesPedidoEnum.proforma,
+// };
+
+export const arrayFinalidadesPedidoConSeleccione: FinalidadesPedidoConSeleccione[] = [
+	'SELECCIONE',
+	FinalidadesPedidoEnum.cotizacion,
+	FinalidadesPedidoEnum.proforma,
+];
+
+// export const FinalidadesPedido = {
+// 	cotizacion: 'COTIZACION',
+// 	proforma: 'PROFORMA',
+// };

@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client';
 import { obtenerFechaYHoraActual, formetearFechaToISO8601 } from '$lib/utils/fechas';
 import { transporterSistemas } from '$lib/server/nodemailer';
 import { env } from '$env/dynamic/private';
-import type { ProductoEnPedido } from '$lib/types/producto.type';
+import type { detallePedidoCrear } from '$lib/types/pedido.type';
 import { EstadosPedido, TiposProductos } from '$lib/constants/pedido.constant';
 import { PORCENTAJE_IVA } from '$lib/constants/pedido.constant';
-import { FinalidadesPedido } from '$lib/constants/pedido.constant';
+import { FinalidadesPedidoEnum } from '$lib/constants/pedido.constant';
 
 const prisma = new PrismaClient();
 
@@ -14,6 +14,11 @@ export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const { timeStampActual_UTCMinus5_ObjJS, fechaHoraActualISO8601_UTC } =
 			obtenerFechaYHoraActual();
+
+		const { pedido, productosAgregadosAlPedido } = await request.json();
+
+		console.log('pedido ====>', pedido);
+		console.log('productosAgregadosAlPedido ====>', productosAgregadosAlPedido);
 
 		const {
 			idCliente,
@@ -23,8 +28,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			fechaEntrega,
 			finalidad,
 			comentario,
-			productos,
-		} = await request.json();
+		} = pedido;
 
 		if (!idCliente) {
 			return new Response(JSON.stringify({ error: 'No se recibio la clave idCliente' }), {
@@ -105,7 +109,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 		}
 
-		if (productos.length === 0) {
+		if (productosAgregadosAlPedido.length === 0) {
 			return new Response(JSON.stringify({ error: 'No se recibieron productos' }), {
 				status: 400,
 				headers: {
@@ -114,8 +118,21 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 		}
 
-		//valido que a ningun producto le falte la cantidad, o que si el producto es distinto de tipo externo tenga el tipoAceite
-		productos.forEach((p: ProductoEnPedido) => {
+		//Se realizan las siguientes validaciones:
+		//que el id del producto sea un valor valido
+		//que a ningun producto le falte la cantidad
+		//que si el producto es distinto de tipo externo tenga el tipoAceite
+		//que el peso sea mayor a 0
+		//que el nombre del producto sea un valor valido
+		productosAgregadosAlPedido.forEach((p: detallePedidoCrear) => {
+			if (!p.idProducto) {
+				return new Response(JSON.stringify({ error: 'Uno de los productos no tiene el id' }), {
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+			}
 			if (!p.cantidad) {
 				return new Response(
 					JSON.stringify({ error: 'Uno de los productos no tienen la cantidad' }),
@@ -138,6 +155,22 @@ export const POST: RequestHandler = async ({ request }) => {
 					},
 				);
 			}
+			if (p.pesoProducto <= 0 || !p.pesoProducto) {
+				return new Response(JSON.stringify({ error: 'Uno de los productos no tiene el peso' }), {
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+			}
+			if (!p.nombreProducto) {
+				return new Response(JSON.stringify({ error: 'Uno de los productos no tiene el nombre' }), {
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+			}
 		});
 
 		/*creandolo con una sola query, primero el pedido y luego los productos*/
@@ -155,18 +188,18 @@ export const POST: RequestHandler = async ({ request }) => {
 				idPedidoPendiente: null, //un pedido recien creado no tiene un pedido pendiente derivado de el
 				motivoRechazo: null,
 				detallePedido: {
-					create: productos.map((p: ProductoEnPedido) => ({
-						idProducto: p.id,
+					create: productosAgregadosAlPedido.map((p: detallePedidoCrear) => ({
+						idProducto: p.idProducto,
 						tipo: p.tipo,
 						tipoAceite: p.tipoAceite,
-						nombreProducto: p.nombre,
-						pesoProducto: p.peso,
-						cantidadEnvases: p.cantidadEnvases,
+						nombreProducto: p.nombreProducto,
+						pesoProducto: p.pesoProducto,
+						cantidadEnvases: p.tipo === TiposProductos.externo ? null : p.cantidadEnvases,
 						cantidad: p.cantidad,
 						valor: p.valor,
 					})),
 				},
-				porcentajeIVA: finalidad === FinalidadesPedido.cotizacion ? null : PORCENTAJE_IVA,
+				porcentajeIVA: finalidad === FinalidadesPedidoEnum.cotizacion ? null : PORCENTAJE_IVA,
 				porcentajeDescuento: cliente.porcentajeDescuento,
 				creado: fechaHoraActualISO8601_UTC,
 			},
@@ -187,7 +220,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			<b>Vendedor</b>: ${vendedor ? vendedor.nombre : 'Vendedor no encontrado'}<br>
 			<b>Fecha de entrega:</b> ${fechaEntrega}<br>
 			<b>Comentario:</b> ${comentario ? comentario : 'Ninguno'}<br>
-			<b>Cantidad de productos:</b> ${productos.length}<br>
+			<b>Cantidad de productos:</b> ${productosAgregadosAlPedido.length}<br>
 			<br>`;
 
 			//se notifica por correo electronico a la empresa

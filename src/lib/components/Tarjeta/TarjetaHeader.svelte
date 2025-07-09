@@ -9,7 +9,7 @@
 {#if titulo}
 	<div
 		class={cn(
-			'sticky flex flex-row items-center justify-center border-b-2 border-neutral-100 bg-white py-4 text-lg',
+			'bord sticky flex flex-row items-center justify-center border-b-2 border-neutral-100 bg-white py-4 text-lg dark:border-gray-700 dark:bg-gray-800 dark:text-slate-300',
 			customClasses,
 		)}
 	>
