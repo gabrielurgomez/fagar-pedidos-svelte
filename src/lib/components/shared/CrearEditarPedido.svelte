@@ -58,6 +58,16 @@
 		clienteSeleccionado = clientes.find((cliente) => cliente.id === pedido!.idCliente) ?? null;
 		finalidadPedidoSeleccionado = pedido.finalidad as FinalidadesPedidoConSeleccione;
 		comentario = pedido.comentario;
+		productosAgregadosAlPedido = pedido.detallePedido.map((producto: detallePedidoCrear) => ({
+			idProducto: producto.idProducto,
+			tipo: producto.tipo,
+			tipoAceite: producto.tipoAceite,
+			nombreProducto: producto.nombreProducto,
+			pesoProducto: producto.pesoProducto,
+			cantidadEnvases: producto.tipo === TiposProductos.externo ? null : producto.cantidadEnvases,
+			cantidad: producto.cantidad,
+			valor: producto.valor,
+		}));
 		inicializado = true;
 	}
 
@@ -113,18 +123,6 @@
 
 		//Si pedido es null, se crea un nuevo pedido
 		if (!pedido) {
-			// const productosAgregadosAlPedido: detallePedidoCrear[] = productosAgregados.map(
-			// 	(producto) => ({
-			// 		idProducto: producto.id,
-			// 		tipo: producto.tipo,
-			// 		tipoAceite: producto.tipoAceite,
-			// 		nombreProducto: producto.nombre,
-			// 		pesoProducto: producto.peso,
-			// 		cantidadEnvases: producto.cantidadEnvases ?? null,
-			// 		cantidad: producto.cantidad,
-			// 		valor: producto.valor,
-			// 	}),
-			// );
 			const pedidoCrear: PedidoCrear = {
 				idVendedor: vendedorLogueado!.id,
 				idCliente: clienteSeleccionado.id,
@@ -137,7 +135,6 @@
 				porcentajeDescuento: clienteSeleccionado.porcentajeDescuento ?? 0,
 				detalleAbonosId: null,
 			};
-			console.log('pedido a crear ====>', pedidoCrear);
 			isSaving = true;
 			const rtaPedidoJson = await fetch('/api/pedido', {
 				method: 'POST',
