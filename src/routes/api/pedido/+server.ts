@@ -279,3 +279,234 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	}
 };
+
+export const PUT: RequestHandler = async ({ request }) => {
+	try {
+		const { pedido, productosAgregadosAlPedido } = await request.json();
+
+		console.log('pedido ====>', pedido);
+		console.log('productosAgregadosAlPedido ====>', productosAgregadosAlPedido);
+
+		const { id, clienteSedeCiudad, clienteSedeDireccion, finalidad, comentario } = pedido;
+
+		if (!id) {
+			return new Response(
+				JSON.stringify({
+					error: 'No se recibio la clave idPedido, es necesario para editar el pedido',
+				}),
+				{
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+		}
+
+		if (!clienteSedeCiudad) {
+			return new Response(JSON.stringify({ error: 'No se recibio la clave clienteSedeCiudad' }), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		}
+
+		if (!clienteSedeDireccion) {
+			return new Response(
+				JSON.stringify({ error: 'No se recibio la clave clienteSedeDireccion' }),
+				{
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+		}
+
+		if (!finalidad) {
+			return new Response(JSON.stringify({ error: 'No se recibio la clave finalidad' }), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		}
+
+		if (productosAgregadosAlPedido.length === 0) {
+			return new Response(JSON.stringify({ error: 'No se recibieron productos' }), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		}
+
+		//Se realizan las siguientes validaciones:
+		//que el id del producto sea un valor valido
+		//que a ningun producto le falte la cantidad
+		//que si el producto es distinto de tipo externo tenga el tipoAceite
+		//que el peso sea mayor a 0
+		//que el nombre del producto sea un valor valido
+		productosAgregadosAlPedido.forEach((p: detallePedidoCrear) => {
+			if (!p.idProducto) {
+				return new Response(JSON.stringify({ error: 'Uno de los productos no tiene el id' }), {
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+			}
+			if (!p.cantidad) {
+				return new Response(
+					JSON.stringify({ error: 'Uno de los productos no tienen la cantidad' }),
+					{
+						status: 400,
+						headers: {
+							'Content-Type': 'application/json',
+						},
+					},
+				);
+			}
+			if (p.tipo !== TiposProductos.externo && !p.tipoAceite) {
+				return new Response(
+					JSON.stringify({ error: 'Uno de los productos no tienen el tipoAceite' }),
+					{
+						status: 400,
+						headers: {
+							'Content-Type': 'application/json',
+						},
+					},
+				);
+			}
+			if (p.pesoProducto <= 0 || !p.pesoProducto) {
+				return new Response(JSON.stringify({ error: 'Uno de los productos no tiene el peso' }), {
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+			}
+			if (!p.nombreProducto) {
+				return new Response(JSON.stringify({ error: 'Uno de los productos no tiene el nombre' }), {
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+			}
+		});
+
+		//se procede a editar el pedido y sus productos en una transacción
+		const resultadoEdicion = await prisma.$transaction(async (tx) => {
+			// 1. Actualizar el pedido
+			const pedidoEditar = await tx.pedidos.update({
+				where: {
+					id: id,
+				},
+				data: {
+					finalidad: finalidad,
+					clienteSedeCiudad: clienteSedeCiudad,
+					clienteSedeDireccion: clienteSedeDireccion,
+					comentario: comentario,
+					porcentajeIVA: finalidad === FinalidadesPedidoEnum.cotizacion ? null : PORCENTAJE_IVA,
+				},
+			});
+
+			// 2. Eliminar todos los productos actuales del pedido
+			await tx.detallePedido.deleteMany({
+				where: {
+					idPedido: id,
+				},
+			});
+
+			// 3. Crear los nuevos productos del pedido
+			const productosCreados = await tx.detallePedido.createMany({
+				data: productosAgregadosAlPedido.map((p: detallePedidoCrear) => ({
+					idPedido: id,
+					idProducto: p.idProducto,
+					tipo: p.tipo,
+					tipoAceite: p.tipoAceite,
+					nombreProducto: p.nombreProducto,
+					pesoProducto: p.pesoProducto,
+					cantidadEnvases: p.tipo === TiposProductos.externo ? null : p.cantidadEnvases,
+					cantidad: p.cantidad,
+					valor: p.valor,
+				})),
+			});
+
+			return { pedidoEditar, productosCreados };
+		});
+
+		if (resultadoEdicion) {
+			const pedidoEditado = await prisma.pedidos.findUnique({
+				where: {
+					id: id,
+				},
+				include: {
+					vendedor: true,
+				},
+			});
+
+			//se envia correo notificando de la edicion
+			const cuerpoHtml = `<b>Se notifica edicion del pedido ID #${resultadoEdicion.pedidoEditar.id}</b><br>
+			<br>
+			<b>ID:</b> ${resultadoEdicion.pedidoEditar.id}<br>
+			<b>Vendedor</b>: ${pedidoEditado?.vendedor ? pedidoEditado.vendedor.nombre : 'Vendedor no encontrado'}<br>
+			<b>Comentario:</b> ${comentario ? comentario : 'Ninguno'}<br>
+			<b>Cantidad de productos:</b> ${productosAgregadosAlPedido.length}<br>
+			<br>`;
+			try {
+				await transporterSistemas.sendMail({
+					from: 'sistemas@fagarcomercial.com',
+					to: env.EMAIL_NOTIFICACION_PEDIDO,
+					replyTo: 'sistemas@fagarcomercial.com',
+					subject: `PEDIDOS - Edicion pedido ID #${resultadoEdicion.pedidoEditar.id}`,
+					html: cuerpoHtml,
+				});
+			} catch (e) {
+				return new Response(
+					JSON.stringify({
+						message: `El pedido se actualizó correctamente con ID ${resultadoEdicion.pedidoEditar.id}, no es necesario que vuelva a crearlo, el error es que no se pudo notificar por correo electronico a la empresa, favor avisar de este error, error de notificacion de correo electronico: ${e}`,
+					}),
+					{
+						status: 201,
+						headers: {
+							'Content-Type': 'application/json',
+						},
+					},
+				);
+			}
+			return new Response(
+				JSON.stringify({
+					message: `Pedido de ID ${resultadoEdicion.pedidoEditar.id} actualizado correctamente`,
+				}),
+				{
+					status: 200,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+		} else {
+			throw new Error('No se pudo editar el pedido');
+		}
+	} catch (e) {
+		console.error(e);
+		if (e instanceof Error && 'response' in e) {
+			return new Response(JSON.stringify(e.response), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		} else {
+			return new Response(JSON.stringify({ error: 'Error desconocido' }), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		}
+	}
+};

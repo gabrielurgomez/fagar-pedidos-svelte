@@ -9,7 +9,7 @@
 
 <div
 	class={cn(
-		'flex items-center justify-between border-b bg-white px-5 pb-5 text-center',
+		'flex items-center justify-between rounded-t-md border-b bg-white px-5 py-5 text-center',
 		customClasses,
 	)}
 	{...$$restProps}

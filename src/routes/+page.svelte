@@ -48,13 +48,13 @@
 	let estadoActual: EstadoActual = EstadoActual.ninguno;
 
 	let productos: ProductoConsultado[] = [];
-	let pedido: PedidoCrear | null = null;
+	let pedido: Pedido | null = null;
 	let pedidoSeleccionado: Pedido | null = null;
 	let ultimosPedidos: Pedido[] = [];
 
 	let tabActivo: Tabs = Tabs.crearEditarPedido;
 	let vendedorLogueado: VendedorLogueado | null = null;
-	let clientes: Cliente[] = [];
+	let clientesDelVendedor: Cliente[] = [];
 
 	const consultarUltimosPedidos = async () => {
 		if (!vendedorLogueado) {
@@ -89,6 +89,7 @@
 				headers: { 'Content-Type': 'application/json' },
 			});
 			let clientesEncontrados = await rta.json();
+			console.log('clientesEncontrados ====>', clientesEncontrados);
 			estadoActual = EstadoActual.ninguno;
 			return clientesEncontrados;
 		} catch (error) {
@@ -128,14 +129,14 @@
 
 				let clientesEncontrados = await consultarClientesDelVendedor(vendedor.id);
 				if (clientesEncontrados.length > 0) {
-					clientes = clientesEncontrados;
+					clientesDelVendedor = clientesEncontrados;
 					vendedorLogueado = {
 						id: vendedor.id,
 						nombre: vendedor.nombre,
 					};
-					// console.log('vendedorLogueado ====>', vendedorLogueado);
-					estadoActual = EstadoActual.ninguno;
+					console.log('vendedorLogueado ====>', vendedorLogueado);
 					tabActivo = Tabs.crearEditarPedido;
+					estadoActual = EstadoActual.ninguno;
 				} else {
 					Swal.fire({
 						icon: 'info',
@@ -193,7 +194,7 @@
 		vendedorLogueado = null;
 		pedido = null;
 		pedidoSeleccionado = null;
-		clientes = [];
+		clientesDelVendedor = [];
 		productos = [];
 		tabActivo = Tabs.ninguno;
 	};
@@ -387,7 +388,8 @@
 									<div class="flex flex-col rounded-lg border p-4">
 										<div class="flex flex-col sm:flex-row">
 											<div class="me-2 font-bold">Cliente:</div>
-											{clientes.find((c) => c.id === pedidoSeleccionado?.idCliente)?.razonSocial}
+											{clientesDelVendedor.find((c) => c.id === pedidoSeleccionado?.idCliente)
+												?.razonSocial}
 										</div>
 										<div class="flex flex-col sm:flex-row">
 											<div class="me-2 font-bold">Sede:</div>
@@ -399,8 +401,9 @@
 										</div>
 										<div class="flex flex-col sm:flex-row">
 											<div class="me-2 font-bold">Celular:</div>
-											{clientes.find((cliente) => cliente.id === pedidoSeleccionado?.idCliente)
-												?.celular}
+											{clientesDelVendedor.find(
+												(cliente) => cliente.id === pedidoSeleccionado?.idCliente,
+											)?.celular}
 										</div>
 									</div>
 								</div>
@@ -524,6 +527,8 @@
 						class={`flex justify-center rounded-lg px-4 py-2 ${finalidadActual === Finalidades.EDITAR ? 'bg-green-500' : ''}	`}
 						on:click={() => {
 							finalidadActual = Finalidades.EDITAR;
+							//por si vengo de otro tab
+							pedidoSeleccionado = null;
 							consultarUltimosPedidos();
 						}}
 					>
@@ -532,104 +537,122 @@
 						</span>
 					</button>
 				</div>
-				<div></div>
 				{#if finalidadActual === Finalidades.CREAR}
-					<CrearEditarPedido pedido={null} {clientes} {vendedorLogueado} />
+					<CrearEditarPedido
+						pedido={null}
+						{clientesDelVendedor}
+						{vendedorLogueado}
+						productosAgregadosAlPedido={[]}
+					/>
 				{/if}
 				{#if finalidadActual === Finalidades.EDITAR}
-					<Tarjeta class="max-h-[60vh] overflow-y-auto sm:w-full">
-						<TarjetaHeader
-							titulo={`Seleccione el pedido a editar, se listan los ultimos ${LIMITEULTIMOSPEDIDOS} pedidos creados`}
-							class="sticky top-0"
-						/>
-						<TarjetaBody>
-							{#if estadoActual === EstadoActual.consultandoUltimosPedidos}
-								<PuntosCargando />
-							{:else if ultimosPedidos.length > 0}
-								<Tabla>
-									<thead class="sticky top-[62px] bg-white">
-										<Fila>
-											<CeldaHeader>
-												<div class="text-xs font-bold sm:text-base">ID</div>
-											</CeldaHeader>
-											<CeldaHeader>
-												<div class="text-xs font-bold sm:text-base">Estado</div>
-											</CeldaHeader>
-											<CeldaHeader>
-												<div class="text-xs font-bold sm:text-base">Fecha creado</div>
-											</CeldaHeader>
-											<CeldaHeader>
-												<div class="text-xs font-bold sm:text-base">Fecha entrega</div>
-											</CeldaHeader>
-											<div class="hidden sm:block">
-												<CeldaHeader>
-													<div class="text-xs font-bold sm:text-base">Comentario</div>
-												</CeldaHeader>
-											</div>
-											<CeldaHeader>
-												<div class="hidden text-base font-bold sm:block">Ver detalle</div>
-												<div class="text-xs sm:hidden">Ver</div>
-											</CeldaHeader>
-										</Fila>
-									</thead>
-									<tbody>
-										{#each ultimosPedidos as pedido}
+					{#if !pedidoSeleccionado}
+						<Tarjeta class="max-h-[60vh] overflow-y-auto sm:w-full">
+							<TarjetaHeader
+								titulo={`Seleccione el pedido a editar, se listan los ultimos ${LIMITEULTIMOSPEDIDOS} pedidos creados`}
+								class="sticky top-0"
+							/>
+							<TarjetaBody>
+								{#if estadoActual === EstadoActual.consultandoUltimosPedidos}
+									<PuntosCargando />
+								{:else if ultimosPedidos.length > 0}
+									<Tabla>
+										<thead class="sticky top-[62px] bg-white">
 											<Fila>
-												<Celda><div class="dark:text-slate-300">{pedido.id}</div></Celda>
-												<Celda>
-													{#if pedido.estado === EstadosPedido.creado || pedido.estado === EstadosPedido.pendiente}
-														<div class="text-xs font-bold sm:text-base dark:text-slate-300">
-															{EstadosPedido.creado}
-														</div>
-													{/if}
-													{#if pedido.estado === EstadosPedido.aprobado}
-														<div class="text-xs font-bold text-green-600 sm:text-base">
-															{EstadosPedido.aprobado}
-														</div>
-													{/if}
-													{#if pedido.estado === EstadosPedido.rechazado}
-														<div class="text-xs font-bold text-red-500 sm:text-base">
-															{EstadosPedido.rechazado}
-														</div>
-													{/if}
-												</Celda>
-
-												<Celda>
-													<div class="text-xs sm:text-base dark:text-slate-300">
-														{formatearFechaDDMMMYYYY(pedido.fechaCreado)}
-													</div>
-												</Celda>
-												<Celda>
-													<div class="text-xs sm:text-base dark:text-slate-300">
-														{formatearFechaDDMMMYYYY(pedido.fechaEntrega)}
-													</div>
-												</Celda>
+												<CeldaHeader>
+													<div class="text-xs font-bold sm:text-base">ID</div>
+												</CeldaHeader>
+												<CeldaHeader>
+													<div class="text-xs font-bold sm:text-base">Estado</div>
+												</CeldaHeader>
+												<CeldaHeader>
+													<div class="text-xs font-bold sm:text-base">Fecha creado</div>
+												</CeldaHeader>
+												<CeldaHeader>
+													<div class="text-xs font-bold sm:text-base">Fecha entrega</div>
+												</CeldaHeader>
 												<div class="hidden sm:block">
+													<CeldaHeader>
+														<div class="text-xs font-bold sm:text-base">Comentario</div>
+													</CeldaHeader>
+												</div>
+												<CeldaHeader>
+													<div class="hidden text-base font-bold sm:block">Editar</div>
+													<div class="text-xs sm:hidden">Ver</div>
+												</CeldaHeader>
+											</Fila>
+										</thead>
+										<tbody>
+											{#each ultimosPedidos as pedido}
+												<Fila>
+													<Celda><div class="dark:text-slate-300">{pedido.id}</div></Celda>
+													<Celda>
+														{#if pedido.estado === EstadosPedido.creado || pedido.estado === EstadosPedido.pendiente}
+															<div class="text-xs font-bold sm:text-base dark:text-slate-300">
+																{EstadosPedido.creado}
+															</div>
+														{/if}
+														{#if pedido.estado === EstadosPedido.aprobado}
+															<div class="text-xs font-bold text-green-600 sm:text-base">
+																{EstadosPedido.aprobado}
+															</div>
+														{/if}
+														{#if pedido.estado === EstadosPedido.rechazado}
+															<div class="text-xs font-bold text-red-500 sm:text-base">
+																{EstadosPedido.rechazado}
+															</div>
+														{/if}
+													</Celda>
+
 													<Celda>
 														<div class="text-xs sm:text-base dark:text-slate-300">
-															{pedido.comentario ? pedido.comentario : 'Ninguno'}
+															{formatearFechaDDMMMYYYY(pedido.fechaCreado)}
 														</div>
 													</Celda>
-												</div>
-												<Celda>
-													<Boton
-														variante="link verdeFagar"
-														on:click={() => (pedidoSeleccionado = pedido)}
-													>
-														Editar
-													</Boton>
-												</Celda>
-											</Fila>
-										{/each}
-									</tbody>
-								</Tabla>
-							{:else}
-								<div class="text-center">No hay pedidos</div>
-							{/if}
-						</TarjetaBody>
-					</Tarjeta>
+													<Celda>
+														<div class="text-xs sm:text-base dark:text-slate-300">
+															{formatearFechaDDMMMYYYY(pedido.fechaEntrega)}
+														</div>
+													</Celda>
+													<div class="hidden sm:block">
+														<Celda>
+															<div class="text-xs sm:text-base dark:text-slate-300">
+																{pedido.comentario ? pedido.comentario : 'Ninguno'}
+															</div>
+														</Celda>
+													</div>
+													<!--Solo se puede editar si el pedido está en estado creado-->
+													{#if pedido.estado === EstadosPedido.creado}
+														<Celda>
+															<Boton
+																variante="link verdeFagar"
+																on:click={() => (pedidoSeleccionado = pedido)}
+															>
+																Editar
+															</Boton>
+														</Celda>
+													{/if}
+												</Fila>
+											{/each}
+										</tbody>
+									</Tabla>
+								{:else}
+									<div class="text-center">No hay pedidos</div>
+								{/if}
+							</TarjetaBody>
+						</Tarjeta>
+					{/if}
 					{#if pedidoSeleccionado}
-						<CrearEditarPedido pedido={pedidoSeleccionado} {clientes} {vendedorLogueado} />
+						<CrearEditarPedido
+							onPedidoEditado={() => {
+								pedidoSeleccionado = null;
+								consultarUltimosPedidos();
+							}}
+							pedido={pedidoSeleccionado}
+							{clientesDelVendedor}
+							{vendedorLogueado}
+							productosAgregadosAlPedido={pedidoSeleccionado.detallePedido}
+						/>
 					{/if}
 				{/if}
 			{/if}

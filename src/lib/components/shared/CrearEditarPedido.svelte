@@ -8,19 +8,18 @@
 	import { Modal, ModalHeader, ModalContent, ModalFooter } from '$lib/components/Modal';
 	import type { Cliente } from '$lib/types/cliente.type';
 	import type {
-		PedidoCrear,
-		FinalidadesPedidoConSeleccione,
+		Pedido,
+		FinalidadesPedido,
 		detallePedidoCrear,
+		PedidoCrear,
+		PedidoEditar,
 	} from '$lib/types/pedido.type';
 	import type { ProductoExternoConsultado } from '$lib/types/producto.type';
 	import Swal from 'sweetalert2';
-	import {
-		TiposProductos,
-		EstadosPedido,
-		arrayFinalidadesPedidoConSeleccione,
-	} from '$lib/constants/pedido.constant';
+	import { TiposProductos, arrayFinalidadesPedido } from '$lib/constants/pedido.constant';
 	import PuntosCargando from '../PuntosCargando.svelte';
 	import type { VendedorLogueado } from '$lib/types/vendedor.type';
+	// import { formatearFechaDDMMMYYYY } from '$lib/utils/fechas';
 
 	export let vendedorLogueado: VendedorLogueado | null = null;
 
@@ -35,8 +34,12 @@
 	}
 	let estadoActual: EstadoActual = EstadoActual.ninguno;
 
-	export let pedido: PedidoCrear | null = null;
-	export let clientes: Cliente[];
+	export let pedido: Pedido | null = null;
+	export let productosAgregadosAlPedido: detallePedidoCrear[] = [];
+	export let clientesDelVendedor: Cliente[];
+	export let onPedidoEditado: () => void = () => {};
+
+	// console.log('clientesDelVendedor recibidos en el componente ====>', clientesDelVendedor);
 
 	let productos: ProductoConsultado[] = [];
 	let productosExternos: ProductoExternoConsultado[] = [];
@@ -44,21 +47,59 @@
 	let sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 	let clienteSeleccionado: Cliente | null = null;
 
+	let idPedido: number | null = null;
 	let fechaEntrega: string = '';
-	let finalidadPedidoSeleccionado: FinalidadesPedidoConSeleccione = 'SELECCIONE';
+	let finalidadPedidoSeleccionado: FinalidadesPedido | null = null;
 	let comentario: string = '';
 
 	let productoSeleccionado: ProductoConsultado | null = null;
-	let productosAgregadosAlPedido: detallePedidoCrear[] = [];
-	// let productosAgregados: ProductoAgregadoAlPedido[] = [];
 
-	let inicializado: boolean = false;
+	let inicializado = false;
 	$: if (pedido && !inicializado) {
-		fechaEntrega = pedido.fechaEntrega ? pedido.fechaEntrega.toISOString().split('T')[0] : '';
-		clienteSeleccionado = clientes.find((cliente) => cliente.id === pedido!.idCliente) ?? null;
-		finalidadPedidoSeleccionado = pedido.finalidad as FinalidadesPedidoConSeleccione;
+		idPedido = pedido.id;
+		// console.log('pedido recibido en el componente ====>', pedido);
+		fechaEntrega = pedido.fechaEntrega
+			? typeof pedido.fechaEntrega === 'string'
+				? pedido.fechaEntrega
+				: pedido.fechaEntrega.toISOString().split('T')[0]
+			: '';
+		// console.log('Se buscará en los clientes el idCliente ====>', pedido!.idCliente);
+		clienteSeleccionado =
+			clientesDelVendedor.find((cliente) => cliente.id === pedido!.idCliente) ?? null;
+
+		const sedeEncontrada = clienteSeleccionado?.sedes.find(
+			(sede) =>
+				sede.ciudad === pedido!.clienteSedeCiudad &&
+				sede.direccion === pedido!.clienteSedeDireccion,
+		);
+		sedeSeleccionada = sedeEncontrada
+			? {
+					id: sedeEncontrada.id,
+					ciudad: sedeEncontrada.ciudad,
+					direccion: sedeEncontrada.direccion,
+				}
+			: { id: 0, ciudad: '', direccion: '' };
+		// console.log('clienteSeleccionado ====>', clienteSeleccionado);
+		// console.log('clienteSeleccionado.sedes ====>', clienteSeleccionado?.sedes);
+		finalidadPedidoSeleccionado = pedido.finalidad as FinalidadesPedido;
 		comentario = pedido.comentario;
 		inicializado = true;
+	}
+	$: if (pedido && clienteSeleccionado && clienteSeleccionado.sedes) {
+		const sedeEncontrada = clienteSeleccionado.sedes.find(
+			(sede) =>
+				sede.ciudad === pedido!.clienteSedeCiudad &&
+				sede.direccion === pedido!.clienteSedeDireccion,
+		);
+		// console.log('sedeEncontrada ====>', sedeEncontrada);
+		sedeSeleccionada = sedeEncontrada
+			? {
+					id: sedeEncontrada.id,
+					ciudad: sedeEncontrada.ciudad,
+					direccion: sedeEncontrada.direccion,
+				}
+			: { id: 0, ciudad: '', direccion: '' };
+		// console.log('--------------------------------------');
 	}
 
 	const crearEditarPedido = async () => {
@@ -93,7 +134,7 @@
 			});
 			return;
 		}
-		if (finalidadPedidoSeleccionado === 'SELECCIONE') {
+		if (!finalidadPedidoSeleccionado) {
 			Swal.fire({
 				icon: 'info',
 				title: 'Finalidad no seleccionada',
@@ -113,18 +154,6 @@
 
 		//Si pedido es null, se crea un nuevo pedido
 		if (!pedido) {
-			// const productosAgregadosAlPedido: detallePedidoCrear[] = productosAgregados.map(
-			// 	(producto) => ({
-			// 		idProducto: producto.id,
-			// 		tipo: producto.tipo,
-			// 		tipoAceite: producto.tipoAceite,
-			// 		nombreProducto: producto.nombre,
-			// 		pesoProducto: producto.peso,
-			// 		cantidadEnvases: producto.cantidadEnvases ?? null,
-			// 		cantidad: producto.cantidad,
-			// 		valor: producto.valor,
-			// 	}),
-			// );
 			const pedidoCrear: PedidoCrear = {
 				idVendedor: vendedorLogueado!.id,
 				idCliente: clienteSeleccionado.id,
@@ -133,11 +162,7 @@
 				clienteSedeCiudad: sedeSeleccionada.ciudad,
 				clienteSedeDireccion: sedeSeleccionada.direccion,
 				comentario: comentario,
-				estado: EstadosPedido.creado,
-				porcentajeDescuento: clienteSeleccionado.porcentajeDescuento ?? 0,
-				detalleAbonosId: null,
 			};
-			console.log('pedido a crear ====>', pedidoCrear);
 			isSaving = true;
 			const rtaPedidoJson = await fetch('/api/pedido', {
 				method: 'POST',
@@ -148,37 +173,82 @@
 				}),
 			});
 			isSaving = false;
+			const rta = await rtaPedidoJson.json();
 			switch (rtaPedidoJson.status) {
 				case 201: {
-					let rta = await rtaPedidoJson.json();
 					Swal.fire({
 						icon: 'success',
 						title: 'Creado',
 						text: rta.message,
 					});
+					fechaEntrega = '';
 					productosAgregadosAlPedido = [];
 					pedido = null;
-					finalidadPedidoSeleccionado = 'SELECCIONE';
+					finalidadPedidoSeleccionado = null;
 					sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
 					clienteSeleccionado = null;
 					productoSeleccionado = null;
 					break;
 				}
 				case 400: {
-					let rtaError = await rtaPedidoJson.json();
 					Swal.fire({
 						icon: 'error',
 						title: 'Error 400',
-						text: rtaError.error,
+						text: rta.error,
 					});
 					break;
 				}
 				case 500: {
-					let rtaError = await rtaPedidoJson.json();
 					Swal.fire({
 						icon: 'error',
 						title: 'Error 500',
-						text: rtaError.error,
+						text: rta.error,
+					});
+					break;
+				}
+			}
+		}
+
+		if (pedido && idPedido) {
+			//se edita pedido
+			const pedidoEditar: PedidoEditar = {
+				id: idPedido,
+				finalidad: finalidadPedidoSeleccionado ?? '',
+				clienteSedeCiudad: sedeSeleccionada.ciudad,
+				clienteSedeDireccion: sedeSeleccionada.direccion,
+				comentario: comentario,
+			};
+			isSaving = true;
+			const rtaPedidoJson = await fetch('/api/pedido', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ pedido: pedidoEditar, productosAgregadosAlPedido }),
+			});
+			isSaving = false;
+			const rta = await rtaPedidoJson.json();
+			switch (rtaPedidoJson.status) {
+				case 200: {
+					Swal.fire({
+						icon: 'success',
+						title: 'Guardado',
+						text: rta.message,
+					});
+					onPedidoEditado();
+					break;
+				}
+				case 400: {
+					Swal.fire({
+						icon: 'error',
+						title: 'Error 400',
+						text: rta.error,
+					});
+					break;
+				}
+				case 500: {
+					Swal.fire({
+						icon: 'error',
+						title: 'Error 500',
+						text: rta.error,
 					});
 					break;
 				}
@@ -234,8 +304,10 @@
 	let touchedInputCliente = false;
 	$: clientesFiltrados =
 		clienteBuscar && touchedInputCliente
-			? clientes.filter((cliente) => cliente.razonSocial.includes(clienteBuscar.toLowerCase()))
-			: clientes;
+			? clientesDelVendedor.filter((cliente) =>
+					cliente.razonSocial.includes(clienteBuscar.toLowerCase()),
+				)
+			: clientesDelVendedor;
 
 	let sedeBuscar = '';
 	let touchedInputSedesCliente = false;
@@ -251,51 +323,92 @@
 </script>
 
 <Tarjeta>
-	<TarjetaHeader titulo="Datos del pedido" />
+	<TarjetaHeader titulo={pedido ? `Editar pedido ID #${idPedido}` : 'Crear pedido'} />
 	<TarjetaBody>
 		<form method="POST" class="w-full" on:submit|preventDefault={crearEditarPedido}>
+			<!--No se permite editar la fecha de entrega-->
 			<label for="fecha de entrega" class="input-label">Fecha de entrega</label>
-			<input bind:value={fechaEntrega} class="input-texto" type="date" />
-			<label for="Seleccione cliente" class="input-label">Seleccione cliente</label>
-			<Combobox
-				items={clientesFiltrados}
-				selected={{
-					value: clienteSeleccionado?.id ?? 0,
-					label: clienteSeleccionado?.razonSocial ?? '',
-				}}
-			>
-				<ComboboxInput placeholder="Seleccione..." />
-				<ComboboxContent>
-					{#each clientesFiltrados as cliente (cliente.id)}
-						<ComboboxItem
-							value={cliente.id}
-							label={cliente.razonSocial}
-							on:click={() => {
-								sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
-								clienteSeleccionado = cliente;
-							}}
-						/>
-					{:else}
-						<span class="block px-5 py-2 text-sm text-muted-foreground">No results found</span>
-					{/each}
-				</ComboboxContent>
-			</Combobox>
+			<input
+				bind:value={fechaEntrega}
+				class={`input-texto ${pedido ? 'text-slate-300' : ''}`}
+				type="date"
+				disabled={pedido ? true : false}
+			/>
+			<div class="mt-4">
+				<label for="Seleccione cliente" class="input-label">Seleccione cliente</label>
+				<!--No se permite editar el cliente-->
+				<Combobox
+					items={clientesFiltrados}
+					selected={{
+						value: clienteSeleccionado?.id ?? 0,
+						label: clienteSeleccionado?.razonSocial ?? '',
+					}}
+					disabled={pedido ? true : false}
+				>
+					<ComboboxInput placeholder="Seleccione..." disabled={pedido ? true : false} />
+					<ComboboxContent>
+						{#each clientesFiltrados as cliente (cliente.id)}
+							<ComboboxItem
+								value={cliente.id}
+								label={cliente.razonSocial}
+								on:click={() => {
+									sedeSeleccionada = { id: 0, ciudad: '', direccion: '' };
+									clienteSeleccionado = cliente;
+									console.log(clienteSeleccionado);
+								}}
+							/>
+						{:else}
+							<span class="block px-5 py-2 text-sm text-muted-foreground">No hay resultados</span>
+						{/each}
+					</ComboboxContent>
+				</Combobox>
+			</div>
 			{#if clienteSeleccionado?.sedes && clienteSeleccionado.sedes.length > 0}
-				<label for="Seleccione sede del cliente" class="input-label">
-					Seleccione sede del cliente
+				<div class="mt-4">
+					<!--la sede si se permite editar-->
+					<label for="Seleccione sede del cliente" class="input-label">
+						Seleccione sede del cliente
+					</label>
+					<Combobox
+						items={sedesFiltrados}
+						selected={{ value: sedeSeleccionada.id, label: sedeSeleccionada.direccion }}
+					>
+						<ComboboxInput placeholder="Seleccione..." />
+						<ComboboxContent>
+							{#each clienteSeleccionado.sedes as sede}
+								<ComboboxItem
+									value={sede.id}
+									label={`${sede.ciudad} - ${sede.direccion}`}
+									on:click={() => {
+										sedeSeleccionada = sede;
+									}}
+								/>
+							{:else}
+								<span class="block px-5 py-2 text-sm text-muted-foreground">No hay resultados</span>
+							{/each}
+						</ComboboxContent>
+					</Combobox>
+				</div>
+			{/if}
+			<div class="mt-4">
+				<label for="SeleccioneFinalidadPedido" class="input-label">
+					Seleccione finalidad pedido
 				</label>
 				<Combobox
-					items={sedesFiltrados}
-					selected={{ value: sedeSeleccionada.id, label: sedeSeleccionada.direccion }}
+					items={arrayFinalidadesPedido}
+					selected={{
+						value: finalidadPedidoSeleccionado,
+						label: finalidadPedidoSeleccionado,
+					}}
 				>
 					<ComboboxInput placeholder="Seleccione..." />
 					<ComboboxContent>
-						{#each clienteSeleccionado.sedes as sede}
+						{#each arrayFinalidadesPedido as finalidadPedido}
 							<ComboboxItem
-								value={sede.id}
-								label={`${sede.ciudad} - ${sede.direccion}`}
+								value={finalidadPedido}
+								label={finalidadPedido}
 								on:click={() => {
-									sedeSeleccionada = sede;
+									finalidadPedidoSeleccionado = finalidadPedido;
 								}}
 							/>
 						{:else}
@@ -303,32 +416,7 @@
 						{/each}
 					</ComboboxContent>
 				</Combobox>
-			{/if}
-			<label for="Seleccione finalidad pedido" class="input-label">
-				Seleccione finalidad pedido
-			</label>
-			<Combobox
-				items={arrayFinalidadesPedidoConSeleccione}
-				selected={{
-					value: finalidadPedidoSeleccionado,
-					label: finalidadPedidoSeleccionado,
-				}}
-			>
-				<ComboboxInput placeholder="Seleccione..." />
-				<ComboboxContent>
-					{#each arrayFinalidadesPedidoConSeleccione as finalidadPedido}
-						<ComboboxItem
-							value={finalidadPedido}
-							label={finalidadPedido}
-							on:click={() => {
-								finalidadPedidoSeleccionado = finalidadPedido;
-							}}
-						/>
-					{:else}
-						<span class="block px-5 py-2 text-sm text-muted-foreground">No results found</span>
-					{/each}
-				</ComboboxContent>
-			</Combobox>
+			</div>
 			<div class="mt-4 flex flex-col items-start gap-2">
 				<Boton
 					variante="link verdeFagar"
@@ -360,10 +448,10 @@
 							<CeldaHeader>ID</CeldaHeader>
 							<CeldaHeader>Producto</CeldaHeader>
 							<CeldaHeader>Tipo</CeldaHeader>
-							<CeldaHeader>Cant</CeldaHeader>
-							<CeldaHeader>Valor</CeldaHeader>
-							<CeldaHeader>Total</CeldaHeader>
-							<CeldaHeader>Quitar</CeldaHeader>
+							<CeldaHeader class="text-start sm:text-center">Cant</CeldaHeader>
+							<CeldaHeader class="text-start sm:text-center">Valor</CeldaHeader>
+							<CeldaHeader class="text-start sm:text-center">Total</CeldaHeader>
+							<CeldaHeader class="text-start sm:text-center">Quitar</CeldaHeader>
 						</Fila>
 
 						{#each productosAgregadosAlPedido as productoAgregado}
@@ -371,16 +459,16 @@
 								<Celda class="flex justify-center px-2 sm:px-4">
 									{productoAgregado.idProducto}
 								</Celda>
-								<Celda class="px-1 text-sm sm:px-4 sm:text-base">
+								<Celda class="px-1 text-sm sm:text-base">
 									{productoAgregado.nombreProducto}
 								</Celda>
-								<Celda class="px-1 text-sm sm:px-4 sm:text-base">
+								<Celda class="px-1 text-sm sm:text-base">
 									{productoAgregado.tipo.charAt(0).toUpperCase() + productoAgregado.tipo.slice(1)}
 								</Celda>
-								<Celda class="px-1 text-start sm:px-4 sm:text-center">
+								<Celda class="text-start sm:text-center">
 									{productoAgregado.cantidad}
 								</Celda>
-								<Celda class="px-1 text-start sm:px-4 sm:text-center">
+								<Celda class="text-start sm:text-center">
 									{new Intl.NumberFormat('es-CO', {
 										style: 'currency',
 										currency: 'COP',
@@ -388,7 +476,7 @@
 										maximumFractionDigits: 0,
 									}).format(productoAgregado.valor)}
 								</Celda>
-								<Celda class="px-1 text-start sm:px-4 sm:text-center">
+								<Celda class="px-1 text-start sm:text-center">
 									{new Intl.NumberFormat('es-CO', {
 										style: 'currency',
 										currency: 'COP',
@@ -417,7 +505,7 @@
 					</Tabla>
 				</div>
 				<div class="mt-3">
-					<label for="w3review" class="mt-4">
+					<label for="totalPedido" class="text-lg font-bold">
 						Total pedido:
 						{new Intl.NumberFormat('es-CO', {
 							style: 'currency',
@@ -433,18 +521,13 @@
 					</label>
 				</div>
 			{/if}
-			<label for="comentario" class="input-label mt-4">Comentarios generales:</label>
-			<textarea
-				bind:value={comentario}
-				class="input-texto mt-2"
-				id="w3review"
-				name="w3review"
-				rows="4"
-				cols="50"
-			/>
+			<div class="mt-4">
+				<label for="comentario" class="input-label">Comentarios generales:</label>
+				<textarea bind:value={comentario} class="input-texto" id="comentario" rows="4" cols="50" />
+			</div>
 			<div class="mt-4">
 				<Boton variante="principal" tipo="submit" cargando={isSaving}>
-					{pedido ? 'Editar pedido' : 'Crear pedido'}
+					{pedido ? 'Guardar cambios' : 'Crear pedido'}
 				</Boton>
 			</div>
 		</form>
@@ -506,11 +589,14 @@
 					</div>
 				</div>
 				{#if productoSeleccionado}
-					<label for="cantidad" class="input-label mt-4">Cantidad</label>
-					<input class="input-texto" bind:value={cantidadProductoSeleccionado} type="number" />
-
-					<label for="valor" class="input-label mt-4">Valor unit (caja o bidon)</label>
-					<input class="input-texto" bind:value={valorProductoSeleccionado} type="number" />
+					<div class="mt-4">
+						<label for="cantidad" class="input-label mt-4">Cantidad</label>
+						<input class="input-texto" bind:value={cantidadProductoSeleccionado} type="number" />
+					</div>
+					<div class="mt-2">
+						<label for="valor" class="input-label mt-4">Valor unit (caja o bidon)</label>
+						<input class="input-texto" bind:value={valorProductoSeleccionado} type="number" />
+					</div>
 				{/if}
 				<div class="mt-4">
 					<Boton
@@ -648,14 +734,18 @@
 					</div>
 				</div>
 				{#if productoSeleccionado}
-					<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
-					<input class="input-texto" bind:value={cantidadProductoSeleccionado} type="number" />
-
-					<label for="valor" class="input-label mt-4">Valor unit caja</label>
-					<input class="input-texto" bind:value={valorProductoSeleccionado} type="number" />
+					<div class="mt-4">
+						<label for="cantidad" class="input-label mt-4">Cantidad cajas</label>
+						<input class="input-texto" bind:value={cantidadProductoSeleccionado} type="number" />
+					</div>
+					<div class="mt-2">
+						<label for="valor" class="input-label mt-4">Valor unit caja</label>
+						<input class="input-texto" bind:value={valorProductoSeleccionado} type="number" />
+					</div>
 				{/if}
 				<Boton
 					variante="link verdeFagar"
+					class="mt-4"
 					on:click={() => {
 						if (!productoSeleccionado) {
 							Swal.fire({
