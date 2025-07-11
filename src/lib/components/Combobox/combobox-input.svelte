@@ -7,30 +7,26 @@
 	export { customClasses as class };
 
 	export let placeholder: string = '';
+	export let disabled: boolean = false;
 </script>
 
-<div class="relative">
-	<Combobox.Input
-		class={cn(
-			`text-md
-			mt-3
-			h-12
-			w-full
-			truncate
-			rounded-lg
-			border
-			px-3
-			transition-colors
-			focus:outline-none
-			focus:ring-2
-			focus:ring-[#00963d]
-			focus:ring-offset-2`,
-			customClasses,
-		)}
-		{...$$restProps}
-		{placeholder}
-	>
-		<slot />
-		<ChevronIcon />
-	</Combobox.Input>
-</div>
+<Combobox.Input
+	class={cn(
+		`
+		h-12
+		w-full
+		truncate
+		rounded-lg
+		border
+		px-3
+		text-sm
+		transition-colors
+		focus:border-2
+		focus:border-[#00963d]
+		focus:outline-none
+		${disabled ? 'text-slate-300' : ''}`,
+		customClasses,
+	)}
+	{...$$restProps}
+	{placeholder}
+/>

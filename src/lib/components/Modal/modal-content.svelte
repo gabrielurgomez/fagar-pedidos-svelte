@@ -25,7 +25,6 @@
 			translate-y-[-50%]
 			rounded-lg	
 			bg-white
-			py-4
 			sm:max-w-[490px]
 			md:w-full`,
 			customClass,

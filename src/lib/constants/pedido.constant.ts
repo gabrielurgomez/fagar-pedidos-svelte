@@ -1,4 +1,4 @@
-import type { FinalidadesPedidoConSeleccione } from '$lib/types/pedido.type';
+import type { FinalidadesPedido } from '$lib/types/pedido.type';
 
 export enum EstadosPedido {
 	creado = 'CREADO',
@@ -32,8 +32,7 @@ export enum FinalidadesPedidoEnum {
 // 	proforma: FinalidadesPedidoEnum.proforma,
 // };
 
-export const arrayFinalidadesPedidoConSeleccione: FinalidadesPedidoConSeleccione[] = [
-	'SELECCIONE',
+export const arrayFinalidadesPedido: FinalidadesPedido[] = [
 	FinalidadesPedidoEnum.cotizacion,
 	FinalidadesPedidoEnum.proforma,
 ];

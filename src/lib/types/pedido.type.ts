@@ -19,9 +19,29 @@ export type PedidoCrear = Omit<
 	| 'fechaCreado'
 	| 'porcentajeIVA'
 	| 'detallePedido'
+	| 'porcentajeDescuento'
+	| 'estado'
+	| 'detalleAbonosId'
 > & {
 	fechaEntrega: Date | null;
 };
 
+//Al editar no se permite cambiar fechaEntrega ni el cliente, pero si la sede
+//por eso se omite idCliente pero no se omite clienteSedeCiudad y clienteSedeDireccion
+export type PedidoEditar = Omit<
+	Pedido,
+	| 'idPedidoPendiente'
+	| 'idCliente'
+	| 'idVendedor'
+	| 'fechaEntrega'
+	| 'creado'
+	| 'motivoRechazo'
+	| 'fechaCreado'
+	| 'porcentajeIVA'
+	| 'detallePedido'
+	| 'porcentajeDescuento'
+	| 'estado'
+	| 'detalleAbonosId'
+>;
+
 export type FinalidadesPedido = 'COTIZACION' | 'PROFORMA';
-export type FinalidadesPedidoConSeleccione = 'SELECCIONE' | FinalidadesPedido;
