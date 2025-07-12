@@ -261,7 +261,7 @@
 			</div>
 		</div>
 		<div class="w-full justify-center px-3 sm:px-20">
-			{#if tabActivo === Tabs.consultarUltimosPedidos && pedido?.idVendedor}
+			{#if tabActivo === Tabs.consultarUltimosPedidos}
 				<Tarjeta class="max-h-[60vh] overflow-y-auto sm:w-full">
 					<TarjetaHeader
 						titulo={`Mis ultimos ${LIMITEULTIMOSPEDIDOS} pedidos`}
